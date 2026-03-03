@@ -84,7 +84,7 @@ export const companies: Company[] = [
 ];
 
 // ============================================
-// PROYECTO ÚNICO - PLATAFORMA E-COMMERCE (2026)
+// PROYECTO ÚNICO - PLATAFORMA E-COMMERCE ENTERPRISE (2026)
 // ============================================
 
 export const projects: Project[] = [
@@ -93,23 +93,23 @@ export const projects: Project[] = [
     companyId: 'c1',
     name: 'E-commerce Platform Enterprise',
     description: 'Plataforma completa de comercio electrónico con microservicios, dashboard administrativo, app móvil y sistema de recomendaciones',
-    progress: 68,
+    progress: 58,
     status: 'active',
     startDate: '2026-01-15',
     endDate: '2026-12-20',
     priority: 'critical',
     category: 'development',
-    estimatedHours: 2850,
+    estimatedHours: 3200,
   },
 ];
 
 // ============================================
-// MÓDULOS - 15 MÓDULOS CON COHERENCIA (2026)
+// MÓDULOS - 18 MÓDULOS CON CASOS REALISTAS
 // ============================================
 
 export const modules: Module[] = [
   // ============================================
-  // MÓDULO 1: Autenticación y Seguridad (COMPLETADO - ENERO/MARZO)
+  // MÓDULOS COMPLETADOS (6)
   // ============================================
   {
     id: 'm1',
@@ -126,10 +126,6 @@ export const modules: Module[] = [
     endDate: '2026-03-10',
     assignedTeam: 'Backend Security',
   },
-
-  // ============================================
-  // MÓDULO 2: Gestión de Usuarios y Perfiles (COMPLETADO - FEBRERO/ABRIL)
-  // ============================================
   {
     id: 'm2',
     projectId: 'p1',
@@ -146,10 +142,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m1'],
   },
-
-  // ============================================
-  // MÓDULO 3: Catálogo de Productos (COMPLETADO - FEBRERO/MAYO)
-  // ============================================
   {
     id: 'm3',
     projectId: 'p1',
@@ -166,10 +158,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m2'],
   },
-
-  // ============================================
-  // MÓDULO 4: Búsqueda y Filtros Avanzados (COMPLETADO - MARZO/JUNIO)
-  // ============================================
   {
     id: 'm4',
     projectId: 'p1',
@@ -186,10 +174,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m3'],
   },
-
-  // ============================================
-  // MÓDULO 5: Carrito de Compras (COMPLETADO - MARZO/JULIO)
-  // ============================================
   {
     id: 'm5',
     projectId: 'p1',
@@ -206,10 +190,6 @@ export const modules: Module[] = [
     assignedTeam: 'Frontend',
     dependencies: ['m3', 'm4'],
   },
-
-  // ============================================
-  // MÓDULO 6: Procesador de Pagos (COMPLETADO - ABRIL/AGOSTO)
-  // ============================================
   {
     id: 'm6',
     projectId: 'p1',
@@ -228,7 +208,7 @@ export const modules: Module[] = [
   },
 
   // ============================================
-  // MÓDULO 7: Gestión de Pedidos (EN PROGRESO - 75%)
+  // MÓDULOS EN PROGRESO (7) - CON DIFERENTES AVANCES
   // ============================================
   {
     id: 'm7',
@@ -246,10 +226,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m6'],
   },
-
-  // ============================================
-  // MÓDULO 8: Panel de Administración (EN PROGRESO - 60%)
-  // ============================================
   {
     id: 'm8',
     projectId: 'p1',
@@ -266,10 +242,6 @@ export const modules: Module[] = [
     assignedTeam: 'Frontend',
     dependencies: ['m7'],
   },
-
-  // ============================================
-  // MÓDULO 9: Sistema de Envíos (EN PROGRESO - 45%)
-  // ============================================
   {
     id: 'm9',
     projectId: 'p1',
@@ -286,10 +258,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m7'],
   },
-
-  // ============================================
-  // MÓDULO 10: Reseñas y Valoraciones (EN PROGRESO - 40%)
-  // ============================================
   {
     id: 'm10',
     projectId: 'p1',
@@ -306,10 +274,6 @@ export const modules: Module[] = [
     assignedTeam: 'Fullstack',
     dependencies: ['m3'],
   },
-
-  // ============================================
-  // MÓDULO 11: Programa de Fidelización (EN PROGRESO - 30%)
-  // ============================================
   {
     id: 'm11',
     projectId: 'p1',
@@ -326,10 +290,6 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m2'],
   },
-
-  // ============================================
-  // MÓDULO 12: Sistema de Recomendaciones (EN PROGRESO - 25%)
-  // ============================================
   {
     id: 'm12',
     projectId: 'p1',
@@ -346,18 +306,14 @@ export const modules: Module[] = [
     assignedTeam: 'Data Science',
     dependencies: ['m4', 'm10'],
   },
-
-  // ============================================
-  // MÓDULO 13: App Móvil (PENDIENTE - 15%)
-  // ============================================
   {
     id: 'm13',
     projectId: 'p1',
     name: 'App Móvil React Native',
     description: 'Aplicación móvil para iOS y Android con funcionalidades principales',
     progress: 15,
-    status: 'pending',
-    column: 'todo',
+    status: 'in-progress',
+    column: 'doing',
     priority: 'high',
     estimatedHours: 300,
     actualHours: 45,
@@ -368,7 +324,7 @@ export const modules: Module[] = [
   },
 
   // ============================================
-  // MÓDULO 14: API Pública (PENDIENTE - 10%)
+  // MÓDULOS PENDIENTES (4)
   // ============================================
   {
     id: 'm14',
@@ -386,12 +342,44 @@ export const modules: Module[] = [
     assignedTeam: 'Backend',
     dependencies: ['m1', 'm3', 'm7'],
   },
-
-  // ============================================
-  // MÓDULO 15: Migración y Escalabilidad (BLOQUEADO - 5%)
-  // ============================================
   {
     id: 'm15',
+    projectId: 'p1',
+    name: 'Integración con ERP',
+    description: 'Conexión con sistemas ERP de clientes',
+    progress: 5,
+    status: 'pending',
+    column: 'todo',
+    priority: 'low',
+    estimatedHours: 180,
+    actualHours: 9,
+    startDate: '2026-09-01',
+    endDate: '2026-12-01',
+    assignedTeam: 'Integrations',
+    dependencies: ['m7', 'm8'],
+  },
+  {
+    id: 'm16',
+    projectId: 'p1',
+    name: 'Marketplace Multivendedor',
+    description: 'Soporte para múltiples vendedores en la plataforma',
+    progress: 0,
+    status: 'pending',
+    column: 'todo',
+    priority: 'medium',
+    estimatedHours: 250,
+    actualHours: 0,
+    startDate: '2026-09-15',
+    endDate: '2026-12-20',
+    assignedTeam: 'Backend',
+    dependencies: ['m3', 'm7', 'm8'],
+  },
+
+  // ============================================
+  // MÓDULOS BLOQUEADOS (1)
+  // ============================================
+  {
+    id: 'm17',
     projectId: 'p1',
     name: 'Migración a Microservicios',
     description: 'Refactorización de monolitos a microservicios, Kubernetes, escalado',
@@ -406,15 +394,35 @@ export const modules: Module[] = [
     assignedTeam: 'DevOps',
     dependencies: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
   },
+
+  // ============================================
+  // MÓDULOS EN ESPERA (1)
+  // ============================================
+  {
+    id: 'm18',
+    projectId: 'p1',
+    name: 'Internacionalización',
+    description: 'Soporte multi-idioma y multi-moneda',
+    progress: 0,
+    status: 'on-hold',
+    column: 'todo',
+    priority: 'low',
+    estimatedHours: 150,
+    actualHours: 0,
+    startDate: '2026-10-01',
+    endDate: '2026-12-20',
+    assignedTeam: 'Frontend',
+    dependencies: ['m3', 'm5', 'm8'],
+  },
 ];
 
 // ============================================
-// TAREAS - 30 TAREAS CON COHERENCIA (MÓDULOS COMPLETADOS TIENEN TAREAS COMPLETADAS)
+// TAREAS - 45 TAREAS CON DIFERENTES ESTADOS
 // ============================================
 
 export const tasks: Task[] = [
   // ============================================
-  // TAREAS MÓDULO 1: Autenticación (6 tareas, TODAS COMPLETADAS)
+  // MÓDULO 1: Autenticación (COMPLETADO) - 6 tareas
   // ============================================
   {
     id: 't1',
@@ -435,13 +443,6 @@ export const tasks: Task[] = [
       { id: 'te5', taskId: 't1', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-01', description: 'Tests de seguridad' },
       { id: 'te6', taskId: 't1', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-04', description: 'Documentación' },
     ],
-    subtasks: [
-      { id: 'st1', name: 'Configuración JWT', completed: true },
-      { id: 'st2', name: 'Access tokens', completed: true },
-      { id: 'st3', name: 'Refresh tokens', completed: true },
-      { id: 'st4', name: 'Blacklist', completed: true },
-      { id: 'st5', name: 'Tests', completed: true },
-    ],
   },
   {
     id: 't2',
@@ -455,16 +456,10 @@ export const tasks: Task[] = [
     createdAt: '2026-01-20',
     completedAt: '2026-02-15',
     timeEntries: [
-      { id: 'te7', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-01-23', description: 'Investigación de librerías' },
+      { id: 'te7', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-01-23', description: 'Investigación' },
       { id: 'te8', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 6, date: '2026-01-27', description: 'Implementación TOTP' },
       { id: 'te9', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-01', description: 'Backup codes' },
       { id: 'te10', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-02-10', description: 'UI para 2FA' },
-    ],
-    subtasks: [
-      { id: 'st6', name: 'Investigación', completed: true },
-      { id: 'st7', name: 'TOTP', completed: true },
-      { id: 'st8', name: 'Backup codes', completed: true },
-      { id: 'st9', name: 'UI', completed: true },
     ],
   },
   {
@@ -479,10 +474,10 @@ export const tasks: Task[] = [
     createdAt: '2026-01-25',
     completedAt: '2026-02-18',
     timeEntries: [
-      { id: 'te11', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-01-28', description: 'Configuración de límites' },
+      { id: 'te11', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-01-28', description: 'Configuración' },
       { id: 'te12', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-01', description: 'Implementación por IP' },
       { id: 'te13', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-02-08', description: 'Por usuario' },
-      { id: 'te14', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 2, date: '2026-02-15', description: 'Tests de carga' },
+      { id: 'te14', taskId: 't3', userId: 'u2', userName: 'Carlos Ruiz', hours: 2, date: '2026-02-15', description: 'Tests' },
     ],
   },
   {
@@ -499,8 +494,8 @@ export const tasks: Task[] = [
     timeEntries: [
       { id: 'te15', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-02-05', description: 'Configuración Google' },
       { id: 'te16', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-10', description: 'Configuración Facebook' },
-      { id: 'te17', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 6, date: '2026-02-15', description: 'Flujo OAuth completo' },
-      { id: 'te18', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-20', description: 'Manejo de usuarios' },
+      { id: 'te17', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 6, date: '2026-02-15', description: 'Flujo OAuth' },
+      { id: 'te18', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-20', description: 'Manejo usuarios' },
       { id: 'te19', taskId: 't4', userId: 'u1', userName: 'Ana García', hours: 3, date: '2026-02-25', description: 'Tests' },
     ],
   },
@@ -516,9 +511,9 @@ export const tasks: Task[] = [
     createdAt: '2026-02-10',
     completedAt: '2026-03-05',
     timeEntries: [
-      { id: 'te20', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-15', description: 'Diseño de logs' },
+      { id: 'te20', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-15', description: 'Diseño' },
       { id: 'te21', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-20', description: 'Implementación' },
-      { id: 'te22', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 2, date: '2026-02-25', description: 'Dashboard de auditoría' },
+      { id: 'te22', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 2, date: '2026-02-25', description: 'Dashboard' },
       { id: 'te23', taskId: 't5', userId: 'u2', userName: 'Carlos Ruiz', hours: 2, date: '2026-03-02', description: 'Pruebas' },
     ],
   },
@@ -534,14 +529,14 @@ export const tasks: Task[] = [
     createdAt: '2026-02-15',
     completedAt: '2026-03-08',
     timeEntries: [
-      { id: 'te24', taskId: 't6', userId: 'u1', userName: 'Ana García', hours: 3, date: '2026-02-20', description: 'Políticas de seguridad' },
-      { id: 'te25', taskId: 't6', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-25', description: 'Recuperación por email' },
+      { id: 'te24', taskId: 't6', userId: 'u1', userName: 'Ana García', hours: 3, date: '2026-02-20', description: 'Políticas' },
+      { id: 'te25', taskId: 't6', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-02-25', description: 'Recuperación' },
       { id: 'te26', taskId: 't6', userId: 'u1', userName: 'Ana García', hours: 2, date: '2026-03-04', description: 'Pruebas' },
     ],
   },
 
   // ============================================
-  // TAREAS MÓDULO 2: Gestión de Usuarios (4 tareas, TODAS COMPLETADAS)
+  // MÓDULO 2: Gestión de Usuarios (COMPLETADO) - 4 tareas
   // ============================================
   {
     id: 't7',
@@ -555,7 +550,7 @@ export const tasks: Task[] = [
     createdAt: '2026-02-01',
     completedAt: '2026-02-25',
     timeEntries: [
-      { id: 'te27', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-05', description: 'Diseño de esquema' },
+      { id: 'te27', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-05', description: 'Diseño' },
       { id: 'te28', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-10', description: 'Tablas' },
       { id: 'te29', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-15', description: 'Relaciones' },
       { id: 'te30', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-02-20', description: 'Índices' },
@@ -573,10 +568,10 @@ export const tasks: Task[] = [
     createdAt: '2026-02-10',
     completedAt: '2026-03-10',
     timeEntries: [
-      { id: 'te31', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-15', description: 'Endpoint GET' },
-      { id: 'te32', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-20', description: 'Endpoint POST' },
-      { id: 'te33', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-25', description: 'Endpoint PUT' },
-      { id: 'te34', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-03-01', description: 'Endpoint DELETE' },
+      { id: 'te31', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-15', description: 'GET' },
+      { id: 'te32', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-20', description: 'POST' },
+      { id: 'te33', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-25', description: 'PUT' },
+      { id: 'te34', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-03-01', description: 'DELETE' },
       { id: 'te35', taskId: 't8', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-05', description: 'Validaciones' },
     ],
   },
@@ -592,7 +587,7 @@ export const tasks: Task[] = [
     createdAt: '2026-02-20',
     completedAt: '2026-03-18',
     timeEntries: [
-      { id: 'te36', taskId: 't9', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-02-25', description: 'Modelo de roles' },
+      { id: 'te36', taskId: 't9', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-02-25', description: 'Modelo' },
       { id: 'te37', taskId: 't9', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-03-01', description: 'Asignación' },
       { id: 'te38', taskId: 't9', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-03-05', description: 'Middleware' },
       { id: 'te39', taskId: 't9', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-03-12', description: 'Pruebas' },
@@ -617,7 +612,7 @@ export const tasks: Task[] = [
   },
 
   // ============================================
-  // TAREAS MÓDULO 3: Catálogo de Productos (5 tareas, TODAS COMPLETADAS)
+  // MÓDULO 3: Catálogo de Productos (COMPLETADO) - 5 tareas
   // ============================================
   {
     id: 't11',
@@ -631,8 +626,8 @@ export const tasks: Task[] = [
     createdAt: '2026-02-15',
     completedAt: '2026-03-10',
     timeEntries: [
-      { id: 'te43', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-18', description: 'Diseño de esquema' },
-      { id: 'te44', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-22', description: 'Creación de tablas' },
+      { id: 'te43', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-18', description: 'Diseño' },
+      { id: 'te44', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-22', description: 'Tablas' },
       { id: 'te45', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-02-26', description: 'Relaciones' },
       { id: 'te46', taskId: 't11', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-03', description: 'Índices' },
     ],
@@ -649,10 +644,10 @@ export const tasks: Task[] = [
     createdAt: '2026-02-20',
     completedAt: '2026-03-25',
     timeEntries: [
-      { id: 'te47', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 6, date: '2026-02-23', description: 'Endpoint GET' },
-      { id: 'te48', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-27', description: 'Endpoint POST' },
-      { id: 'te49', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-03-03', description: 'Endpoint PUT' },
-      { id: 'te50', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-08', description: 'Endpoint DELETE' },
+      { id: 'te47', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 6, date: '2026-02-23', description: 'GET' },
+      { id: 'te48', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-02-27', description: 'POST' },
+      { id: 'te49', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-03-03', description: 'PUT' },
+      { id: 'te50', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-08', description: 'DELETE' },
       { id: 'te51', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-15', description: 'Validaciones' },
       { id: 'te52', taskId: 't12', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-20', description: 'Tests' },
     ],
@@ -670,7 +665,7 @@ export const tasks: Task[] = [
     completedAt: '2026-03-30',
     timeEntries: [
       { id: 'te53', taskId: 't13', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-03-05', description: 'Categorías' },
-      { id: 'te54', taskId: 't13', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-10', description: 'Atributos variables' },
+      { id: 'te54', taskId: 't13', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-10', description: 'Atributos' },
       { id: 'te55', taskId: 't13', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-03-18', description: 'Relaciones' },
       { id: 'te56', taskId: 't13', userId: 'u3', userName: 'Laura Méndez', hours: 2, date: '2026-03-25', description: 'Pruebas' },
     ],
@@ -687,9 +682,9 @@ export const tasks: Task[] = [
     createdAt: '2026-03-10',
     completedAt: '2026-04-20',
     timeEntries: [
-      { id: 'te57', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-03-15', description: 'Modelo de stock' },
-      { id: 'te58', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 6, date: '2026-03-20', description: 'Actualización de stock' },
-      { id: 'te59', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-25', description: 'Alertas de stock bajo' },
+      { id: 'te57', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-03-15', description: 'Modelo stock' },
+      { id: 'te58', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 6, date: '2026-03-20', description: 'Actualización' },
+      { id: 'te59', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-03-25', description: 'Alertas' },
       { id: 'te60', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-04-01', description: 'Historial' },
       { id: 'te61', taskId: 't14', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-04-10', description: 'Tests' },
     ],
@@ -706,247 +701,15 @@ export const tasks: Task[] = [
     createdAt: '2026-03-20',
     completedAt: '2026-04-25',
     timeEntries: [
-      { id: 'te62', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-03-25', description: 'Export a CSV' },
-      { id: 'te63', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-30', description: 'Import desde CSV' },
+      { id: 'te62', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-03-25', description: 'Export CSV' },
+      { id: 'te63', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-30', description: 'Import CSV' },
       { id: 'te64', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-04-05', description: 'Validaciones' },
-      { id: 'te65', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-04-15', description: 'Manejo de errores' },
+      { id: 'te65', taskId: 't15', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-04-15', description: 'Errores' },
     ],
   },
 
   // ============================================
-  // TAREAS MÓDULO 4: Búsqueda y Filtros (4 tareas, TODAS COMPLETADAS)
-  // ============================================
-  {
-    id: 't16',
-    moduleId: 'm4',
-    name: 'Implementación de Elasticsearch',
-    estimatedHours: 20,
-    actualHours: 24,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2026-03-01',
-    completedAt: '2026-04-05',
-    timeEntries: [
-      { id: 'te66', taskId: 't16', userId: 'u4', userName: 'Elena Gómez', hours: 6, date: '2026-03-05', description: 'Configuración' },
-      { id: 'te67', taskId: 't16', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-03-10', description: 'Indexación' },
-      { id: 'te68', taskId: 't16', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-03-15', description: 'Consultas' },
-      { id: 'te69', taskId: 't16', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-03-22', description: 'Optimización' },
-      { id: 'te70', taskId: 't16', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-03-30', description: 'Pruebas' },
-    ],
-  },
-  {
-    id: 't17',
-    moduleId: 'm4',
-    name: 'Búsqueda por texto completo',
-    estimatedHours: 16,
-    actualHours: 18,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2026-03-15',
-    completedAt: '2026-04-20',
-    timeEntries: [
-      { id: 'te71', taskId: 't17', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-03-18', description: 'Análisis de texto' },
-      { id: 'te72', taskId: 't17', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-03-25', description: 'Implementación' },
-      { id: 'te73', taskId: 't17', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-01', description: 'Relevancia' },
-      { id: 'te74', taskId: 't17', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-10', description: 'Pruebas' },
-    ],
-  },
-  {
-    id: 't18',
-    moduleId: 'm4',
-    name: 'Filtros dinámicos',
-    estimatedHours: 14,
-    actualHours: 16,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'medium',
-    createdAt: '2026-04-01',
-    completedAt: '2026-04-30',
-    timeEntries: [
-      { id: 'te75', taskId: 't18', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-05', description: 'Diseño de filtros' },
-      { id: 'te76', taskId: 't18', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-10', description: 'Implementación' },
-      { id: 'te77', taskId: 't18', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-18', description: 'Combinación' },
-      { id: 'te78', taskId: 't18', userId: 'u4', userName: 'Elena Gómez', hours: 3, date: '2026-04-25', description: 'Pruebas' },
-    ],
-  },
-  {
-    id: 't19',
-    moduleId: 'm4',
-    name: 'Autocompletado en búsqueda',
-    estimatedHours: 12,
-    actualHours: 14,
-    assignedTo: 'Laura Méndez',
-    status: 'completed',
-    priority: 'low',
-    createdAt: '2026-04-10',
-    completedAt: '2026-05-15',
-    timeEntries: [
-      { id: 'te79', taskId: 't19', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-15', description: 'Algoritmo' },
-      { id: 'te80', taskId: 't19', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-22', description: 'Implementación' },
-      { id: 'te81', taskId: 't19', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-04-28', description: 'UI' },
-      { id: 'te82', taskId: 't19', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-08', description: 'Pruebas' },
-    ],
-  },
-
-  // ============================================
-  // TAREAS MÓDULO 5: Carrito de Compras (4 tareas, TODAS COMPLETADAS)
-  // ============================================
-  {
-    id: 't20',
-    moduleId: 'm5',
-    name: 'Carrito persistente en base de datos',
-    estimatedHours: 16,
-    actualHours: 18,
-    assignedTo: 'Laura Méndez',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2026-03-15',
-    completedAt: '2026-04-25',
-    timeEntries: [
-      { id: 'te83', taskId: 't20', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-18', description: 'Modelo de carrito' },
-      { id: 'te84', taskId: 't20', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-03-25', description: 'Persistencia' },
-      { id: 'te85', taskId: 't20', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-01', description: 'Recuperación' },
-      { id: 'te86', taskId: 't20', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-15', description: 'Tests' },
-    ],
-  },
-  {
-    id: 't21',
-    moduleId: 'm5',
-    name: 'Cupones y descuentos',
-    estimatedHours: 14,
-    actualHours: 16,
-    assignedTo: 'Carlos Ruiz',
-    status: 'completed',
-    priority: 'medium',
-    createdAt: '2026-04-01',
-    completedAt: '2026-05-05',
-    timeEntries: [
-      { id: 'te87', taskId: 't21', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-04-05', description: 'Modelo de cupones' },
-      { id: 'te88', taskId: 't21', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-04-12', description: 'Validación' },
-      { id: 'te89', taskId: 't21', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-04-20', description: 'Cálculo de descuentos' },
-      { id: 'te90', taskId: 't21', userId: 'u2', userName: 'Carlos Ruiz', hours: 3, date: '2026-04-28', description: 'Pruebas' },
-    ],
-  },
-  {
-    id: 't22',
-    moduleId: 'm5',
-    name: 'Lista de deseos',
-    estimatedHours: 10,
-    actualHours: 12,
-    assignedTo: 'Laura Méndez',
-    status: 'completed',
-    priority: 'low',
-    createdAt: '2026-04-15',
-    completedAt: '2026-05-15',
-    timeEntries: [
-      { id: 'te91', taskId: 't22', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-18', description: 'Modelo' },
-      { id: 'te92', taskId: 't22', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-04-25', description: 'API' },
-      { id: 'te93', taskId: 't22', userId: 'u3', userName: 'Laura Méndez', hours: 2, date: '2026-05-02', description: 'UI básica' },
-      { id: 'te94', taskId: 't22', userId: 'u3', userName: 'Laura Méndez', hours: 2, date: '2026-05-10', description: 'Pruebas' },
-    ],
-  },
-  {
-    id: 't23',
-    moduleId: 'm5',
-    name: 'Carrito compartido por enlace',
-    estimatedHours: 12,
-    actualHours: 10,
-    assignedTo: 'Laura Méndez',
-    status: 'completed',
-    priority: 'low',
-    createdAt: '2026-05-01',
-    completedAt: '2026-05-30',
-    timeEntries: [
-      { id: 'te95', taskId: 't23', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-05-05', description: 'Generación de enlaces' },
-      { id: 'te96', taskId: 't23', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-12', description: 'Compartir' },
-      { id: 'te97', taskId: 't23', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-20', description: 'Recuperación' },
-    ],
-  },
-
-  // ============================================
-  // TAREAS MÓDULO 6: Procesador de Pagos (4 tareas, TODAS COMPLETADAS)
-  // ============================================
-  {
-    id: 't24',
-    moduleId: 'm6',
-    name: 'Integración con Stripe',
-    estimatedHours: 30,
-    actualHours: 35,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'critical',
-    createdAt: '2026-04-01',
-    completedAt: '2026-05-15',
-    timeEntries: [
-      { id: 'te98', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 6, date: '2026-04-05', description: 'Configuración' },
-      { id: 'te99', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-10', description: 'Checkout' },
-      { id: 'te100', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-15', description: 'Manejo de tarjetas' },
-      { id: 'te101', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-22', description: 'Webhooks' },
-      { id: 'te102', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-28', description: 'Manejo de errores' },
-      { id: 'te103', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-05-05', description: 'Pruebas' },
-      { id: 'te104', taskId: 't24', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-05-10', description: 'Documentación' },
-    ],
-  },
-  {
-    id: 't25',
-    moduleId: 'm6',
-    name: 'Integración con PayPal',
-    estimatedHours: 20,
-    actualHours: 22,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2026-04-15',
-    completedAt: '2026-05-25',
-    timeEntries: [
-      { id: 'te105', taskId: 't25', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-18', description: 'Configuración' },
-      { id: 'te106', taskId: 't25', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-04-22', description: 'Checkout' },
-      { id: 'te107', taskId: 't25', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-04-28', description: 'IPN' },
-      { id: 'te108', taskId: 't25', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-05-08', description: 'Pruebas' },
-      { id: 'te109', taskId: 't25', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-05-18', description: 'Documentación' },
-    ],
-  },
-  {
-    id: 't26',
-    moduleId: 'm6',
-    name: 'Facturación electrónica',
-    estimatedHours: 16,
-    actualHours: 18,
-    assignedTo: 'Carlos Ruiz',
-    status: 'completed',
-    priority: 'medium',
-    createdAt: '2026-05-01',
-    completedAt: '2026-06-05',
-    timeEntries: [
-      { id: 'te110', taskId: 't26', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-05-05', description: 'Modelo de facturas' },
-      { id: 'te111', taskId: 't26', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-10', description: 'Generación PDF' },
-      { id: 'te112', taskId: 't26', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-18', description: 'Envío por email' },
-      { id: 'te113', taskId: 't26', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-05-25', description: 'Historial' },
-    ],
-  },
-  {
-    id: 't27',
-    moduleId: 'm6',
-    name: 'Webhooks y notificaciones',
-    estimatedHours: 14,
-    actualHours: 16,
-    assignedTo: 'Elena Gómez',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2026-05-15',
-    completedAt: '2026-06-15',
-    timeEntries: [
-      { id: 'te114', taskId: 't27', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-05-18', description: 'Diseño' },
-      { id: 'te115', taskId: 't27', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-05-22', description: 'Implementación' },
-      { id: 'te116', taskId: 't27', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-05-28', description: 'Manejo de eventos' },
-      { id: 'te117', taskId: 't27', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-06-05', description: 'Pruebas' },
-    ],
-  },
-
-  // ============================================
-  // TAREAS MÓDULO 7: Gestión de Pedidos (4 tareas, EN PROGRESO)
+  // MÓDULO 7: Gestión de Pedidos (EN PROGRESO) - 4 tareas
   // ============================================
   {
     id: 't28',
@@ -979,7 +742,7 @@ export const tasks: Task[] = [
       { id: 'te121', taskId: 't29', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-05-12', description: 'Checkout' },
       { id: 'te122', taskId: 't29', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-05-15', description: 'Validación' },
       { id: 'te123', taskId: 't29', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-05-18', description: 'Confirmación' },
-      { id: 'te124', taskId: 't29', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-22', description: 'Manejo de errores' },
+      { id: 'te124', taskId: 't29', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-22', description: 'Errores' },
     ],
   },
   {
@@ -993,7 +756,7 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-05-15',
     timeEntries: [
-      { id: 'te125', taskId: 't30', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-18', description: 'Máquina de estados' },
+      { id: 'te125', taskId: 't30', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-18', description: 'Estados' },
       { id: 'te126', taskId: 't30', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-22', description: 'Notificaciones' },
       { id: 'te127', taskId: 't30', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-25', description: 'Historial' },
     ],
@@ -1015,7 +778,7 @@ export const tasks: Task[] = [
   },
 
   // ============================================
-  // TAREAS MÓDULO 8: Panel de Administración (4 tareas, EN PROGRESO)
+  // MÓDULO 8: Panel de Administración (EN PROGRESO) - 4 tareas
   // ============================================
   {
     id: 't32',
@@ -1030,7 +793,7 @@ export const tasks: Task[] = [
     timeEntries: [
       { id: 'te130', taskId: 't32', userId: 'u3', userName: 'Laura Méndez', hours: 5, date: '2026-05-18', description: 'Maquetación' },
       { id: 'te131', taskId: 't32', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-05-22', description: 'Componentes' },
-      { id: 'te132', taskId: 't32', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-25', description: 'Conexión API' },
+      { id: 'te132', taskId: 't32', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-25', description: 'API' },
       { id: 'te133', taskId: 't32', userId: 'u3', userName: 'Laura Méndez', hours: 3, date: '2026-05-28', description: 'Datos' },
     ],
   },
@@ -1078,16 +841,65 @@ export const tasks: Task[] = [
     priority: 'low',
     createdAt: '2026-06-05',
     timeEntries: [
-      { id: 'te141', taskId: 't35', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-06-08', description: 'Diseño de reportes' },
+      { id: 'te141', taskId: 't35', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-06-08', description: 'Diseño' },
       { id: 'te142', taskId: 't35', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-06-12', description: 'Implementación' },
     ],
   },
 
   // ============================================
-  // TAREAS MÓDULO 13: App Móvil (4 tareas, PENDIENTES)
+  // MÓDULO 9: Sistema de Envíos (EN PROGRESO) - 3 tareas
   // ============================================
   {
     id: 't36',
+    moduleId: 'm9',
+    name: 'Integración con Correos API',
+    estimatedHours: 20,
+    actualHours: 12,
+    assignedTo: 'Carlos Ruiz',
+    status: 'in-progress',
+    priority: 'medium',
+    createdAt: '2026-06-01',
+    timeEntries: [
+      { id: 'te143', taskId: 't36', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-06-04', description: 'Investigación' },
+      { id: 'te144', taskId: 't36', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-06-08', description: 'Configuración' },
+      { id: 'te145', taskId: 't36', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-06-12', description: 'Implementación' },
+    ],
+  },
+  {
+    id: 't37',
+    moduleId: 'm9',
+    name: 'Cálculo de tarifas',
+    estimatedHours: 16,
+    actualHours: 8,
+    assignedTo: 'Laura Méndez',
+    status: 'in-progress',
+    priority: 'medium',
+    createdAt: '2026-06-10',
+    timeEntries: [
+      { id: 'te146', taskId: 't37', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-06-12', description: 'Lógica' },
+      { id: 'te147', taskId: 't37', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-06-15', description: 'Implementación' },
+    ],
+  },
+  {
+    id: 't38',
+    moduleId: 'm9',
+    name: 'Generación de etiquetas',
+    estimatedHours: 12,
+    actualHours: 4,
+    assignedTo: 'Carlos Ruiz',
+    status: 'pending',
+    priority: 'low',
+    createdAt: '2026-06-15',
+    timeEntries: [
+      { id: 'te148', taskId: 't38', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-06-18', description: 'Inicio' },
+    ],
+  },
+
+  // ============================================
+  // MÓDULO 13: App Móvil (EN PROGRESO) - 4 tareas
+  // ============================================
+  {
+    id: 't39',
     moduleId: 'm13',
     name: 'Configuración del proyecto React Native',
     estimatedHours: 12,
@@ -1098,12 +910,12 @@ export const tasks: Task[] = [
     createdAt: '2026-08-01',
     completedAt: '2026-08-10',
     timeEntries: [
-      { id: 'te143', taskId: 't36', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-03', description: 'Setup inicial' },
-      { id: 'te144', taskId: 't36', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-06', description: 'Configuración de navegación' },
+      { id: 'te149', taskId: 't39', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-03', description: 'Setup' },
+      { id: 'te150', taskId: 't39', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-06', description: 'Navegación' },
     ],
   },
   {
-    id: 't37',
+    id: 't40',
     moduleId: 'm13',
     name: 'Pantalla de productos',
     estimatedHours: 24,
@@ -1113,14 +925,14 @@ export const tasks: Task[] = [
     priority: 'high',
     createdAt: '2026-08-05',
     timeEntries: [
-      { id: 'te145', taskId: 't37', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-08-08', description: 'Lista de productos' },
-      { id: 'te146', taskId: 't37', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-08-12', description: 'Detalle de producto' },
-      { id: 'te147', taskId: 't37', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-15', description: 'Filtros' },
-      { id: 'te148', taskId: 't37', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-18', description: 'Conexión API' },
+      { id: 'te151', taskId: 't40', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-08-08', description: 'Lista' },
+      { id: 'te152', taskId: 't40', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-08-12', description: 'Detalle' },
+      { id: 'te153', taskId: 't40', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-15', description: 'Filtros' },
+      { id: 'te154', taskId: 't40', userId: 'u6', userName: 'Javier López', hours: 4, date: '2026-08-18', description: 'API' },
     ],
   },
   {
-    id: 't38',
+    id: 't41',
     moduleId: 'm13',
     name: 'Pantalla de carrito',
     estimatedHours: 18,
@@ -1130,12 +942,12 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-08-15',
     timeEntries: [
-      { id: 'te149', taskId: 't38', userId: 'u6', userName: 'Javier López', hours: 3, date: '2026-08-18', description: 'Diseño' },
-      { id: 'te150', taskId: 't38', userId: 'u6', userName: 'Javier López', hours: 3, date: '2026-08-21', description: 'Implementación' },
+      { id: 'te155', taskId: 't41', userId: 'u6', userName: 'Javier López', hours: 3, date: '2026-08-18', description: 'Diseño' },
+      { id: 'te156', taskId: 't41', userId: 'u6', userName: 'Javier López', hours: 3, date: '2026-08-21', description: 'Implementación' },
     ],
   },
   {
-    id: 't39',
+    id: 't42',
     moduleId: 'm13',
     name: 'Autenticación en app',
     estimatedHours: 16,
@@ -1148,11 +960,11 @@ export const tasks: Task[] = [
   },
 
   // ============================================
-  // TAREAS MÓDULO 15: Migración (BLOQUEADO)
+  // MÓDULO 17: Migración a Microservicios (BLOQUEADO) - 3 tareas
   // ============================================
   {
-    id: 't40',
-    moduleId: 'm15',
+    id: 't43',
+    moduleId: 'm17',
     name: 'Análisis de arquitectura actual',
     estimatedHours: 20,
     actualHours: 10,
@@ -1161,13 +973,13 @@ export const tasks: Task[] = [
     priority: 'critical',
     createdAt: '2026-09-01',
     timeEntries: [
-      { id: 'te151', taskId: 't40', userId: 'u5', userName: 'Miguel Torres', hours: 5, date: '2026-09-03', description: 'Revisión de código' },
-      { id: 'te152', taskId: 't40', userId: 'u5', userName: 'Miguel Torres', hours: 5, date: '2026-09-06', description: 'Documentación' },
+      { id: 'te157', taskId: 't43', userId: 'u5', userName: 'Miguel Torres', hours: 5, date: '2026-09-03', description: 'Revisión' },
+      { id: 'te158', taskId: 't43', userId: 'u5', userName: 'Miguel Torres', hours: 5, date: '2026-09-06', description: 'Documentación' },
     ],
   },
   {
-    id: 't41',
-    moduleId: 'm15',
+    id: 't44',
+    moduleId: 'm17',
     name: 'Diseño de microservicios',
     estimatedHours: 30,
     actualHours: 0,
@@ -1178,8 +990,8 @@ export const tasks: Task[] = [
     timeEntries: [],
   },
   {
-    id: 't42',
-    moduleId: 'm15',
+    id: 't45',
+    moduleId: 'm17',
     name: 'Configuración de Kubernetes',
     estimatedHours: 25,
     actualHours: 0,
@@ -1188,5 +1000,59 @@ export const tasks: Task[] = [
     priority: 'high',
     createdAt: '2026-09-15',
     timeEntries: [],
+  },
+
+  // ============================================
+  // TAREAS CON SOBRECOSTO Y AHORRO
+  // ============================================
+  {
+    id: 't46',
+    moduleId: 'm10',
+    name: 'Optimización de consultas (sobrecosto)',
+    estimatedHours: 8,
+    actualHours: 16,
+    assignedTo: 'Elena Gómez',
+    status: 'completed',
+    priority: 'high',
+    createdAt: '2026-07-01',
+    completedAt: '2026-07-20',
+    timeEntries: [
+      { id: 'te159', taskId: 't46', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-07-05', description: 'Análisis' },
+      { id: 'te160', taskId: 't46', userId: 'u4', userName: 'Elena Gómez', hours: 6, date: '2026-07-10', description: 'Implementación' },
+      { id: 'te161', taskId: 't46', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-07-15', description: 'Pruebas' },
+    ],
+  },
+  {
+    id: 't47',
+    moduleId: 'm11',
+    name: 'Implementación rápida (ahorro)',
+    estimatedHours: 20,
+    actualHours: 12,
+    assignedTo: 'Ana García',
+    status: 'completed',
+    priority: 'medium',
+    createdAt: '2026-07-10',
+    completedAt: '2026-07-25',
+    timeEntries: [
+      { id: 'te162', taskId: 't47', userId: 'u1', userName: 'Ana García', hours: 4, date: '2026-07-12', description: 'Diseño' },
+      { id: 'te163', taskId: 't47', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-07-15', description: 'Implementación' },
+      { id: 'te164', taskId: 't47', userId: 'u1', userName: 'Ana García', hours: 3, date: '2026-07-20', description: 'Pruebas' },
+    ],
+  },
+  {
+    id: 't48',
+    moduleId: 'm12',
+    name: 'Tarea en revisión',
+    estimatedHours: 15,
+    actualHours: 14,
+    assignedTo: 'Elena Gómez',
+    status: 'review',
+    priority: 'high',
+    createdAt: '2026-08-01',
+    timeEntries: [
+      { id: 'te165', taskId: 't48', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-08-03', description: 'Algoritmo' },
+      { id: 'te166', taskId: 't48', userId: 'u4', userName: 'Elena Gómez', hours: 5, date: '2026-08-06', description: 'Implementación' },
+      { id: 'te167', taskId: 't48', userId: 'u4', userName: 'Elena Gómez', hours: 4, date: '2026-08-10', description: 'Pruebas' },
+    ],
   },
 ];

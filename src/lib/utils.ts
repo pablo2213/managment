@@ -93,11 +93,6 @@ export function getProjectTasks(projectId: string): Task[] {
   return getProjectTasksCached(projectId);
 }
 
-export function getProjectEstimatedHours(projectId: string): number {
-  const projectModules = getProjectModulesCached(projectId);
-  return projectModules.reduce((acc, m) => acc + m.estimatedHours, 0);
-}
-
 export function getTaskActualHours(task: Task): number {
   // Si hay time entries, sumarlos
   if (task.timeEntries && Array.isArray(task.timeEntries) && task.timeEntries.length > 0) {
@@ -312,28 +307,6 @@ export function recalculateModuleFromTasks(moduleId: string, tasksList: Task[]) 
     : (moduleTasks.length > 0 ? 100 : 0);
 
   return { progress };
-}
-
-// ============================================
-// FUNCIÓN PARA OBTENER HORAS REALES DE UN MÓDULO
-// ============================================
-
-export function getModuleActualHours(moduleId: string, moduleTasks: Task[]): number {
-  // Validar que moduleTasks sea un array
-  if (!moduleTasks || !Array.isArray(moduleTasks)) {
-    console.warn(`getModuleActualHours: moduleTasks no es un array para módulo ${moduleId}`);
-    return 0;
-  }
-
-  let total = 0;
-  for (const task of moduleTasks) {
-    if (task.timeEntries && task.timeEntries.length > 0) {
-      total += task.timeEntries.reduce((sum, entry) => sum + (entry?.hours || 0), 0);
-    } else {
-      total += task.actualHours || 0;
-    }
-  }
-  return total;
 }
 
 // ============================================
@@ -660,4 +633,75 @@ export function predictCompletion(projectId: string, allTasks: Task[], project: 
     confidence: Math.min(90, 30 + Math.round((allTimeEntries.length / 20) * 70)),
     message: "Proyección basada en time entries"
   };
+}
+// ============================================
+// NUEVAS FUNCIONES PARA CÁLCULO DE HORAS
+// ============================================
+
+// Obtener horas estimadas de un módulo (suma de sus tareas)
+export function getModuleEstimatedHours(moduleId: string, tasks: Task[]): number {
+  return tasks
+    .filter(t => t.moduleId === moduleId)
+    .reduce((acc, t) => acc + t.estimatedHours, 0);
+}
+
+// Obtener horas reales de un módulo (suma de time entries de sus tareas)
+export function getModuleActualHours(moduleId: string, tasks: Task[]): number {
+  return tasks
+    .filter(t => t.moduleId === moduleId)
+    .reduce((acc, t) => {
+      if (t.timeEntries && t.timeEntries.length > 0) {
+        return acc + t.timeEntries.reduce((sum, e) => sum + e.hours, 0);
+      }
+      return acc + (t.actualHours || 0);
+    }, 0);
+}
+
+// Horas de módulos completados (suma de horas estimadas de módulos con estado completed)
+export function getCompletedModulesHours(modules: Module[], tasks: Task[]): number {
+  return modules
+    .filter(m => m.status === 'completed')
+    .reduce((acc, m) => {
+      const moduleTasks = tasks.filter(t => t.moduleId === m.id);
+      return acc + moduleTasks.reduce((sum, t) => sum + t.estimatedHours, 0);
+    }, 0);
+}
+
+// Horas de tareas completadas (suma de horas estimadas de tareas completadas)
+export function getCompletedTasksHours(tasks: Task[]): number {
+  return tasks
+    .filter(t => t.status === 'completed')
+    .reduce((acc, t) => acc + t.estimatedHours, 0);
+}
+
+// Horas reales de tareas completadas (suma de time entries de tareas completadas)
+export function getCompletedTasksActualHours(tasks: Task[]): number {
+  return tasks
+    .filter(t => t.status === 'completed')
+    .reduce((acc, t) => {
+      if (t.timeEntries && t.timeEntries.length > 0) {
+        return acc + t.timeEntries.reduce((sum, e) => sum + e.hours, 0);
+      }
+      return acc + (t.actualHours || 0);
+    }, 0);
+}
+
+// Horas reales totales (todas las time entries)
+export function getTotalActualHours(tasks: Task[]): number {
+  return tasks.reduce((acc, t) => {
+    if (t.timeEntries && t.timeEntries.length > 0) {
+      return acc + t.timeEntries.reduce((sum, e) => sum + e.hours, 0);
+    }
+    return acc + (t.actualHours || 0);
+  }, 0);
+}
+
+// Horas estimadas totales del proyecto (suma de todas las tareas)
+export function getTotalEstimatedHours(tasks: Task[]): number {
+  return tasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+}
+
+// Horas del proyecto (definidas al crear el proyecto)
+export function getProjectEstimatedHours(project: Project): number {
+  return project.estimatedHours || 0;
 }
