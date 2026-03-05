@@ -182,9 +182,9 @@ export function KanbanBoard({
       actualHours: 0,
       startDate: moduleData.startDate,
       endDate: moduleData.endDate,
-      assignedTeam: moduleData.assignedTeam || undefined,
-      areaId: moduleData.areaId,        // ← NUEVO
-      leadId: moduleData.leadId,        // ← NUEVO
+      areaId: moduleData.areaId,
+      leadId: moduleData.leadId,
+      dependencies: moduleData.dependencies || [],
     };
 
     setModules(prev => [...prev, newModule]);

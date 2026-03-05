@@ -53,7 +53,6 @@ export function ModuleForm({
     priority: initialData?.priority || 'medium',
     startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
     endDate: initialData?.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    assignedTeam: initialData?.assignedTeam || '',
     areaId: initialData?.areaId,
     leadId: initialData?.leadId,
     dependencies: initialData?.dependencies || [],
@@ -368,17 +367,6 @@ export function ModuleForm({
             />
           </div>
         </div>
-      </div>
-
-      {/* Equipo asignado (texto libre, legacy) - OPCIONAL */}
-      <div className="space-y-2">
-        <Label htmlFor="team" className="text-sm font-medium">Equipo asignado (opcional)</Label>
-        <Input
-          id="team"
-          value={formData.assignedTeam}
-          onChange={(e) => setFormData({ ...formData, assignedTeam: e.target.value })}
-          placeholder="Ej: Backend, Frontend, QA, etc."
-        />
       </div>
 
       {/* Nota informativa */}
