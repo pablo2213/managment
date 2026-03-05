@@ -7,10 +7,14 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Calendar, Clock, AlertTriangle, Sparkles, User, Link2, Plus, Edit2, Trash2 } from 'lucide-react'; // ← AÑADIDO Trash2
-import { Module, Task, projects, modules, tasks as initialTasks, TimeEntry } from '@/lib/data';
+import {
+  Calendar, Clock, AlertTriangle, Sparkles, User, Link2,
+  Plus, Edit2, Trash2, Building2, Star, Users
+} from 'lucide-react';
+import { Module, Task, projects, modules, tasks as initialTasks, TimeEntry, users, areas } from '@/lib/data';
 import {
   getDelayDays,
   formatDelay,
@@ -21,8 +25,10 @@ import {
 } from '@/lib/utils';
 import { TaskItem } from '@/app/board/TaskItem';
 import { ModuleInfoForm } from '@/app/board/ModuleInfoForm';
+import { UserSelector } from '@/components/board/UserSelector';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  AlertDialog,  // ← NUEVO
+  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -39,7 +45,8 @@ interface ModuleModalProps {
   onOpenChange: (open: boolean) => void;
   onTasksUpdate?: (moduleId: string, updatedTasks: Task[]) => void;
   onModuleUpdate?: (moduleId: string, updatedModule: Partial<Module>) => void;
-  onModuleDelete?: (moduleId: string) => void; // ← NUEVO
+  onModuleDelete?: (moduleId: string) => void;
+  currentUserId?: string;
 }
 
 export function ModuleModal({
@@ -49,20 +56,22 @@ export function ModuleModal({
   onOpenChange,
   onTasksUpdate,
   onModuleUpdate,
-  onModuleDelete // ← NUEVO
+  onModuleDelete,
+  currentUserId
 }: ModuleModalProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [isEditingModule, setIsEditingModule] = useState(false);
   const [actualHours, setActualHours] = useState<number>(0);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false); // ← NUEVO
+  const [estimatedHours, setEstimatedHours] = useState<number>(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newTask, setNewTask] = useState<Partial<Task>>({
     name: '',
+    description: '',
     estimatedHours: 0,
-    actualHours: 0,
     status: 'pending',
     priority: 'medium',
-    assignedTo: '',
+    assignedTo: [],
     timeEntries: [],
   });
 
@@ -71,13 +80,19 @@ export function ModuleModal({
     setLocalTasks(tasks);
   }, [tasks]);
 
-  // Recalcular horas reales cada vez que cambian localTasks
+  // Recalcular horas cada vez que cambian localTasks
   useEffect(() => {
     if (module && Array.isArray(localTasks)) {
-      const hours = getModuleActualHours(module.id, localTasks);
-      setActualHours(hours);
+      const actual = getModuleActualHours(module.id, localTasks);
+      setActualHours(actual);
+
+      const estimated = localTasks
+        .filter(t => t.moduleId === module.id)
+        .reduce((acc, t) => acc + t.estimatedHours, 0);
+      setEstimatedHours(estimated);
     } else {
       setActualHours(0);
+      setEstimatedHours(0);
     }
   }, [localTasks, module]);
 
@@ -89,10 +104,10 @@ export function ModuleModal({
   const isProjectCompleted = project?.status === 'completed';
   const completionType = isProjectCompleted && project ? getProjectCompletionType(project) : null;
 
-  const hourDeviation = module.estimatedHours > 0
-    ? Math.round((actualHours / module.estimatedHours) * 100)
+  const hourDeviation = estimatedHours > 0
+    ? Math.round((actualHours / estimatedHours) * 100)
     : 0;
-  const isOverBudget = actualHours > module.estimatedHours;
+  const isOverBudget = actualHours > estimatedHours;
 
   // Estadísticas de tareas
   const totalTasks = localTasks.length;
@@ -101,6 +116,20 @@ export function ModuleModal({
   const blockedTasks = localTasks.filter(t => t.status === 'blocked').length;
   const pendingTasks = localTasks.filter(t => t.status === 'pending').length;
   const reviewTasks = localTasks.filter(t => t.status === 'review').length;
+
+  // Tareas asignadas al usuario actual
+  const myTasks = localTasks.filter(t => t.assignedTo?.includes(currentUserId || ''));
+
+  // Obtener datos del área y líder
+  const area = module.areaId ? areas.find(a => a.id === module.areaId) : null;
+  const leadUser = module.leadId ? users.find(u => u.id === module.leadId) : null;
+  const assignedUsers = module.assignedUsers
+    ? users.filter(u => module.assignedUsers?.includes(u.id))
+    : [];
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
 
   // ============================================
   // FUNCIÓN PARA RECALCULAR Y ACTUALIZAR MÓDULO
@@ -111,7 +140,7 @@ export function ModuleModal({
   };
 
   // ============================================
-  // FUNCIÓN PARA ELIMINAR MÓDULO (NUEVA)
+  // FUNCIÓN PARA ELIMINAR MÓDULO
   // ============================================
   const handleDeleteModule = () => {
     onModuleDelete?.(module.id);
@@ -126,15 +155,20 @@ export function ModuleModal({
   const handleCreateTask = () => {
     if (!newTask.name) return;
 
+    const assignedUsersData = users.filter(u => newTask.assignedTo?.includes(u.id));
+    const assignedToNames = assignedUsersData.map(u => u.name);
+
     const task: Task = {
       id: `task-${Date.now()}`,
       moduleId: module.id,
       name: newTask.name,
+      description: newTask.description || '',
       estimatedHours: newTask.estimatedHours || 0,
-      actualHours: newTask.actualHours || 0,
+      actualHours: 0,
       status: newTask.status as any || 'pending',
       priority: newTask.priority as any || 'medium',
-      assignedTo: newTask.assignedTo,
+      assignedTo: newTask.assignedTo || [],
+      assignedToNames: assignedToNames,
       createdAt: new Date().toISOString().split('T')[0],
       timeEntries: [],
     };
@@ -143,17 +177,16 @@ export function ModuleModal({
     setLocalTasks(updatedTasks);
     onTasksUpdate?.(module.id, updatedTasks);
 
-    // Recalcular y actualizar el módulo
     recalcAndUpdateModule(updatedTasks);
 
     setShowNewTaskForm(false);
     setNewTask({
       name: '',
+      description: '',
       estimatedHours: 0,
-      actualHours: 0,
       status: 'pending',
       priority: 'medium',
-      assignedTo: '',
+      assignedTo: [],
       timeEntries: [],
     });
   };
@@ -172,7 +205,6 @@ export function ModuleModal({
     setLocalTasks(updatedTasks);
     onTasksUpdate?.(module.id, updatedTasks);
 
-    // Recalcular y actualizar el módulo
     recalcAndUpdateModule(updatedTasks);
   };
 
@@ -181,7 +213,6 @@ export function ModuleModal({
     setLocalTasks(updatedTasks);
     onTasksUpdate?.(module.id, updatedTasks);
 
-    // Recalcular y actualizar el módulo
     recalcAndUpdateModule(updatedTasks);
   };
 
@@ -207,23 +238,23 @@ export function ModuleModal({
     setLocalTasks(updatedTasks);
     onTasksUpdate?.(module.id, updatedTasks);
 
-    // Recalcular y actualizar el módulo
     recalcAndUpdateModule(updatedTasks);
   };
 
-const handleModuleSave = (updatedModule: Partial<Module>) => {
-  // Asegurar que se pasan todos los campos necesarios
-  onModuleUpdate?.(module.id, {
-    name: updatedModule.name,
-    description: updatedModule.description,
-    priority: updatedModule.priority,
-    estimatedHours: updatedModule.estimatedHours,
-    startDate: updatedModule.startDate,
-    endDate: updatedModule.endDate,
-    assignedTeam: updatedModule.assignedTeam,
-  });
-  setIsEditingModule(false);
-};
+  const handleModuleSave = (updatedModule: Partial<Module>) => {
+    onModuleUpdate?.(module.id, {
+      name: updatedModule.name,
+      description: updatedModule.description,
+      priority: updatedModule.priority,
+      startDate: updatedModule.startDate,
+      endDate: updatedModule.endDate,
+      assignedTeam: updatedModule.assignedTeam,
+      assignedUsers: updatedModule.assignedUsers,
+      areaId: updatedModule.areaId,
+      leadId: updatedModule.leadId,
+    });
+    setIsEditingModule(false);
+  };
 
   return (
     <>
@@ -239,7 +270,7 @@ const handleModuleSave = (updatedModule: Partial<Module>) => {
                       module.priority === 'medium' ? 'Media' : 'Baja'} prioridad
                 </Badge>
               </DialogTitle>
-              <div className="flex items-center gap-2"> {/* ← MODIFICADO: grupo de botones */}
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -290,6 +321,14 @@ const handleModuleSave = (updatedModule: Partial<Module>) => {
                 </Badge>
               )}
             </div>
+
+            {/* Indicador de tareas asignadas al usuario actual */}
+            {myTasks.length > 0 && (
+              <div className="mt-2 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full inline-flex items-center gap-1">
+                <User className="h-3 w-3" />
+                Tienes {myTasks.length} tarea(s) asignada(s) en este módulo
+              </div>
+            )}
           </DialogHeader>
 
           <Tabs defaultValue="info" className="mt-4">
@@ -297,205 +336,291 @@ const handleModuleSave = (updatedModule: Partial<Module>) => {
               <TabsTrigger value="info">Información del Módulo</TabsTrigger>
               <TabsTrigger value="tasks">
                 Tareas ({localTasks.length})
+                {myTasks.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-[10px] px-1">
+                    {myTasks.length} mías
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
-          {/* TAB 1: Información del Módulo */}
-          <TabsContent value="info" className="space-y-4 mt-4">
-            {isEditingModule ? (
-              <ModuleInfoForm
-                module={module}
-                onSave={handleModuleSave}
-                onCancel={() => setIsEditingModule(false)}
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {/* Columna izquierda */}
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Progreso</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Completado</span>
-                        <span className={isDelayed ? 'text-red-500 font-medium' : ''}>
-                          {module.progress}%
+            {/* TAB 1: Información del Módulo */}
+            <TabsContent value="info" className="space-y-4 mt-4">
+              {isEditingModule ? (
+                <ModuleInfoForm
+                  module={module}
+                  onSave={handleModuleSave}
+                  onCancel={() => setIsEditingModule(false)}
+                  availableModules={modules} // ← Pasar todos los módulos del proyecto
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Columna izquierda */}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Progreso</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Completado</span>
+                          <span className={isDelayed ? 'text-red-500 font-medium' : ''}>
+                            {module.progress}%
+                          </span>
+                        </div>
+                        <Progress value={module.progress} className={`h-2 ${isDelayed ? 'bg-red-100' : ''}`} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Horas</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-muted/50 p-2 rounded">
+                          <div className="text-xs text-muted-foreground">Estimadas (de tareas)</div>
+                          <div className="text-lg font-semibold">{estimatedHours}h</div>
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded">
+                          <div className="text-xs text-muted-foreground">Reales (Time Entries)</div>
+                          <div className={`text-lg font-semibold ${isOverBudget ? 'text-red-500' : 'text-green-500'}`}>
+                            {actualHours}h
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <span className="text-muted-foreground">Eficiencia: </span>
+                        <span className={isOverBudget ? 'text-red-500' : 'text-green-500'}>
+                          {hourDeviation}%
                         </span>
                       </div>
-                      <Progress value={module.progress} className={`h-2 ${isDelayed ? 'bg-red-100' : ''}`} />
                     </div>
-                  </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Horas</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-muted/50 p-2 rounded">
-                        <div className="text-xs text-muted-foreground">Estimadas</div>
-                        <div className="text-lg font-semibold">{module.estimatedHours}h</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded">
-                        <div className="text-xs text-muted-foreground">Reales (Time Entries)</div>
-                        <div className={`text-lg font-semibold ${isOverBudget ? 'text-red-500' : 'text-green-500'}`}>
-                          {actualHours}h
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Fechas</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>Inicio: {new Date(module.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>Fin: {new Date(module.endDate).toLocaleDateString()}</span>
+                          {isDelayed && (
+                            <span className="text-xs text-red-500">(retrasado)</span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-2 text-sm">
-                      <span className="text-muted-foreground">Eficiencia: </span>
-                      <span className={isOverBudget ? 'text-red-500' : 'text-green-500'}>
-                        {hourDeviation}%
-                      </span>
-                    </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Fechas</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>Inicio: {new Date(module.startDate).toLocaleDateString()}</span>
+                  {/* Columna derecha */}
+                  <div className="space-y-4">
+                    {/* Área responsable */}
+                    {area && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-1">
+                          <Building2 className="h-4 w-4" />
+                          Área responsable
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: area.color }}
+                          />
+                          <span className="font-medium">{area.name}</span>
+                          <span className="text-xs text-muted-foreground">· {area.description}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>Fin: {new Date(module.endDate).toLocaleDateString()}</span>
-                        {isDelayed && (
-                          <span className="text-xs text-red-500">(retrasado)</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    )}
 
-                {/* Columna derecha */}
-                <div className="space-y-4">
-                  {module.assignedTeam && (
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Equipo asignado</h3>
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{module.assignedTeam}</span>
+                    {/* Líder del módulo */}
+                    {leadUser && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-500" />
+                          Líder del módulo
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={leadUser.avatar} />
+                            <AvatarFallback>{getInitials(leadUser.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium">{leadUser.name}</span>
+                            <Badge variant="outline" className="ml-2 text-[10px]">
+                              {leadUser.role}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {module.dependencies && module.dependencies.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Dependencias</h3>
-                      <div className="space-y-1">
-                        {module.dependencies.map(depId => {
-                          const depModule = modules.find(m => m.id === depId);
-                          return depModule ? (
-                            <div key={depId} className="flex items-center gap-2 text-sm">
-                              <Link2 className="h-4 w-4 text-muted-foreground" />
-                              <span>{depModule.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {depModule.status}
+                    {/* Equipo asignado al módulo */}
+                    {assignedUsers.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          Equipo del módulo ({assignedUsers.length})
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {assignedUsers.map(user => {
+                            const userArea = areas.find(a => a.id === user.areaId);
+                            return (
+                              <Badge
+                                key={user.id}
+                                variant="outline"
+                                className="flex items-center gap-1 px-2 py-1"
+                                style={{ borderLeftColor: userArea?.color, borderLeftWidth: '3px' }}
+                              >
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={user.avatar} />
+                                  <AvatarFallback className="text-[8px]">
+                                    {getInitials(user.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs">{user.name}</span>
                               </Badge>
-                            </div>
-                          ) : null;
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Proyecto</h3>
-                    <div className="text-sm">
-                      <p className="font-medium">{project?.name}</p>
-                      <p className="text-xs text-muted-foreground">{project?.description}</p>
+                    {/* Dependencias */}
+                    {module.dependencies && module.dependencies.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">Dependencias</h3>
+                        <div className="space-y-1">
+                          {module.dependencies.map(depId => {
+                            const depModule = modules.find(m => m.id === depId);
+                            return depModule ? (
+                              <div key={depId} className="flex items-center gap-2 text-sm">
+                                <Link2 className="h-4 w-4 text-muted-foreground" />
+                                <span>{depModule.name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {depModule.status}
+                                </Badge>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Proyecto */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Proyecto</h3>
+                      <div className="text-sm">
+                        <p className="font-medium">{project?.name}</p>
+                        <p className="text-xs text-muted-foreground">{project?.description}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </TabsContent>
+              )}
+            </TabsContent>
 
-          {/* TAB 2: Tareas */}
-          <TabsContent value="tasks" className="space-y-4 mt-4">
-            {/* Estadísticas de tareas */}
-            <div className="grid grid-cols-5 gap-2">
-              <div className="bg-green-500/10 rounded p-2 text-center">
-                <div className="text-xs text-muted-foreground">Completadas</div>
-                <div className="text-lg font-semibold text-green-500">{completedTasks}</div>
+            {/* TAB 2: Tareas */}
+            <TabsContent value="tasks" className="space-y-4 mt-4">
+              {/* Estadísticas de tareas */}
+              <div className="grid grid-cols-5 gap-2">
+                <div className="bg-green-500/10 rounded p-2 text-center">
+                  <div className="text-xs text-muted-foreground">Completadas</div>
+                  <div className="text-lg font-semibold text-green-500">{completedTasks}</div>
+                </div>
+                <div className="bg-blue-500/10 rounded p-2 text-center">
+                  <div className="text-xs text-muted-foreground">En progreso</div>
+                  <div className="text-lg font-semibold text-blue-500">{inProgressTasks}</div>
+                </div>
+                <div className="bg-yellow-500/10 rounded p-2 text-center">
+                  <div className="text-xs text-muted-foreground">Revisión</div>
+                  <div className="text-lg font-semibold text-yellow-500">{reviewTasks}</div>
+                </div>
+                <div className="bg-red-500/10 rounded p-2 text-center">
+                  <div className="text-xs text-muted-foreground">Bloqueadas</div>
+                  <div className="text-lg font-semibold text-red-500">{blockedTasks}</div>
+                </div>
+                <div className="bg-gray-500/10 rounded p-2 text-center">
+                  <div className="text-xs text-muted-foreground">Pendientes</div>
+                  <div className="text-lg font-semibold text-gray-500">{pendingTasks}</div>
+                </div>
               </div>
-              <div className="bg-blue-500/10 rounded p-2 text-center">
-                <div className="text-xs text-muted-foreground">En progreso</div>
-                <div className="text-lg font-semibold text-blue-500">{inProgressTasks}</div>
-              </div>
-              <div className="bg-yellow-500/10 rounded p-2 text-center">
-                <div className="text-xs text-muted-foreground">Revisión</div>
-                <div className="text-lg font-semibold text-yellow-500">{reviewTasks}</div>
-              </div>
-              <div className="bg-red-500/10 rounded p-2 text-center">
-                <div className="text-xs text-muted-foreground">Bloqueadas</div>
-                <div className="text-lg font-semibold text-red-500">{blockedTasks}</div>
-              </div>
-              <div className="bg-gray-500/10 rounded p-2 text-center">
-                <div className="text-xs text-muted-foreground">Pendientes</div>
-                <div className="text-lg font-semibold text-gray-500">{pendingTasks}</div>
-              </div>
-            </div>
 
-            <Separator />
+              <Separator />
+              {showNewTaskForm ? '' : (
+                <Button
+                  onClick={() => setShowNewTaskForm(!showNewTaskForm)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Tarea
+                </Button>
+              )}
+              {showNewTaskForm && (
+                <Card className="p-4 border-2 border-primary/20">
+                  <div className="space-y-3">
+                    <Input
+                      value={newTask.name}
+                      onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                      placeholder="Nombre de la tarea"
+                      className="font-medium"
+                    />
 
-            <Button
-              onClick={() => setShowNewTaskForm(!showNewTaskForm)}
-              variant="outline"
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {showNewTaskForm ? 'Cancelar' : 'Nueva Tarea'}
-            </Button>
+                    <Textarea
+                      value={newTask.description || ''}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      placeholder="Descripción de la tarea (opcional)"
+                      rows={2}
+                      className="text-sm"
+                    />
 
-            {showNewTaskForm && (
-              <Card className="p-4 border-2 border-primary/20">
-                <div className="space-y-3">
-                  <Input
-                    value={newTask.name}
-                    onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                    placeholder="Nombre de la tarea"
-                    className="font-medium"
-                  />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Estado</label>
+                        <Select
+                          value={newTask.status}
+                          onValueChange={(value: any) => setNewTask({ ...newTask, status: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendiente</SelectItem>
+                            <SelectItem value="in-progress">En progreso</SelectItem>
+                            <SelectItem value="review">Revisión</SelectItem>
+                            <SelectItem value="completed">Completada</SelectItem>
+                            <SelectItem value="blocked">Bloqueada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Estado</label>
-                      <Select
-                        value={newTask.status}
-                        onValueChange={(value: any) => setNewTask({ ...newTask, status: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendiente</SelectItem>
-                          <SelectItem value="in-progress">En progreso</SelectItem>
-                          <SelectItem value="review">Revisión</SelectItem>
-                          <SelectItem value="completed">Completada</SelectItem>
-                          <SelectItem value="blocked">Bloqueada</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Prioridad</label>
+                        <Select
+                          value={newTask.priority}
+                          onValueChange={(value: any) => setNewTask({ ...newTask, priority: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Baja</SelectItem>
+                            <SelectItem value="medium">Media</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="critical">Crítica</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Prioridad</label>
-                      <Select
-                        value={newTask.priority}
-                        onValueChange={(value: any) => setNewTask({ ...newTask, priority: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Baja</SelectItem>
-                          <SelectItem value="medium">Media</SelectItem>
-                          <SelectItem value="high">Alta</SelectItem>
-                          <SelectItem value="critical">Crítica</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <label className="text-xs text-muted-foreground mb-1 block">Asignar a</label>
+                      <UserSelector
+                        selectedUsers={newTask.assignedTo || []}
+                        onChange={(userIds) => setNewTask({ ...newTask, assignedTo: userIds })}
+                        placeholder="Seleccionar responsables..."
+                        showAreaFilter={true}
+                      />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Horas estimadas</label>
                       <Input
@@ -505,80 +630,78 @@ const handleModuleSave = (updatedModule: Partial<Module>) => {
                         min={0}
                         step={0.5}
                       />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Las horas reales se registrarán mediante time entries
+                      </p>
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Horas reales</label>
-                      <Input
-                        type="number"
-                        value={newTask.actualHours}
-                        onChange={(e) => setNewTask({ ...newTask, actualHours: Number(e.target.value) })}
-                        min={0}
-                        step={0.5}
-                      />
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="default"
+                        onClick={() => setShowNewTaskForm(false)}
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="default"
+                        onClick={handleCreateTask}
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                        disabled={!newTask.name?.trim()}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Crear Tarea
+                      </Button>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Asignado a</label>
-                    <Input
-                      value={newTask.assignedTo || ''}
-                      onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                      placeholder="Nombre del responsable"
-                    />
-                  </div>
-
-                  <Button onClick={handleCreateTask} className="w-full">
-                    Crear Tarea
-                  </Button>
-                </div>
-              </Card>
-            )}
-
-            {/* Lista de tareas */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {localTasks.length > 0 ? (
-                localTasks.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    onAddTimeEntry={handleAddTimeEntry}
-                  />
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  No hay tareas asignadas a este módulo. ¡Crea una nueva!
-                </p>
+                </Card>
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
 
-    {/* Diálogo de confirmación para eliminar módulo (NUEVO) */}
-    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-red-500">
-            <AlertTriangle className="h-5 w-5" />
-            ¿Eliminar módulo?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción eliminará permanentemente el módulo <span className="font-bold">{module?.name}</span> y todas sus tareas asociadas.
-            <br /><br />
-            <span className="text-red-500">Esta acción no se puede deshacer.</span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteModule} className="bg-red-500 hover:bg-red-600">
-            Eliminar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {localTasks.length > 0 ? (
+                  localTasks.map(task => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onUpdate={handleUpdateTask}
+                      onDelete={handleDeleteTask}
+                      onAddTimeEntry={handleAddTimeEntry}
+                      currentUserId={currentUserId}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay tareas asignadas a este módulo. ¡Crea una nueva!
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="h-5 w-5" />
+              ¿Eliminar módulo?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente el módulo <span className="font-bold">{module?.name}</span> y todas sus tareas asociadas.
+              <br /><br />
+              <span className="text-red-500">Esta acción no se puede deshacer.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteModule} className="bg-red-500 hover:bg-red-600">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

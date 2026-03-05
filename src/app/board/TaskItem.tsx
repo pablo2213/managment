@@ -4,13 +4,16 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserSelector } from '@/components/board/UserSelector';
 import {
   Calendar, Clock, User, Edit2, Trash2, CheckCircle2,
   AlertTriangle, Plus, History, ChevronDown, ChevronUp,
-  ListChecks
+  ListChecks, FileText, Users
 } from 'lucide-react';
-import { Task, Subtask, TimeEntry } from '@/lib/data';
+import { Task, Subtask, TimeEntry, users } from '@/lib/data';
 import { priorityColors } from '@/lib/utils';
 import { TimeEntryForm } from './TimeEntryForm';
 import { TimeEntryList } from './TimeEntryList';
@@ -21,9 +24,16 @@ interface TaskItemProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   onDelete: (taskId: string) => void;
   onAddTimeEntry: (taskId: string, entry: Omit<TimeEntry, 'id'>) => void;
+  currentUserId?: string; // Para resaltar tareas del usuario actual
 }
 
-export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemProps) {
+export function TaskItem({ 
+  task, 
+  onUpdate, 
+  onDelete, 
+  onAddTimeEntry,
+  currentUserId 
+}: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showTimeForm, setShowTimeForm] = useState(false);
   const [showTimeHistory, setShowTimeHistory] = useState(false);
@@ -31,6 +41,9 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
   const [showAddSubtaskInput, setShowAddSubtaskInput] = useState(false);
   const [newSubtaskName, setNewSubtaskName] = useState('');
   const [editedTask, setEditedTask] = useState(task);
+
+  // Verificar si el usuario actual está asignado a esta tarea
+  const isAssignedToMe = currentUserId && task.assignedTo?.includes(currentUserId);
 
   const handleSave = () => {
     if (editedTask.status === 'completed' && task.status !== 'completed') {
@@ -45,7 +58,6 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
     setIsEditing(false);
   };
 
-  // Función para agregar subtarea
   const handleAddSubtask = () => {
     if (!newSubtaskName.trim()) return;
 
@@ -64,9 +76,12 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
     }
   };
 
-  // ============================================
-  // NUEVA FUNCIÓN PARA ELIMINAR TIME ENTRY
-  // ============================================
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddSubtask();
+    }
+  };
+
   const handleDeleteTimeEntry = (entryId: string) => {
     if (!task.timeEntries) return;
     
@@ -79,25 +94,35 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
     });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAddSubtask();
-    }
-  };
-
   const totalHours = task.timeEntries?.reduce((acc, entry) => acc + entry.hours, 0) || task.actualHours;
   const subtasksCompleted = task.subtasks?.filter(st => st.completed).length || 0;
   const subtasksTotal = task.subtasks?.length || 0;
+
+  // Obtener datos de usuarios asignados
+  const assignedUsers = users.filter(u => task.assignedTo?.includes(u.id));
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
 
   if (isEditing) {
     return (
       <Card className="p-4 border-2 border-primary/20">
         <div className="space-y-3">
+          {/* Nombre */}
           <Input
             value={editedTask.name}
             onChange={(e) => setEditedTask({ ...editedTask, name: e.target.value })}
             placeholder="Nombre de la tarea"
             className="font-medium"
+          />
+
+          {/* Descripción */}
+          <Textarea
+            value={editedTask.description || ''}
+            onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
+            placeholder="Descripción de la tarea (opcional)"
+            rows={2}
           />
 
           <div className="grid grid-cols-2 gap-2">
@@ -139,6 +164,15 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
             </div>
           </div>
 
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Asignar a</label>
+            <UserSelector
+              selectedUsers={editedTask.assignedTo || []}
+              onChange={(userIds) => setEditedTask({ ...editedTask, assignedTo: userIds })}
+              placeholder="Seleccionar responsables..."
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Horas estimadas</label>
@@ -158,15 +192,6 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
             </div>
           </div>
 
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Asignado a</label>
-            <Input
-              value={editedTask.assignedTo || ''}
-              onChange={(e) => setEditedTask({ ...editedTask, assignedTo: e.target.value })}
-              placeholder="Nombre del responsable"
-            />
-          </div>
-
           <div className="flex justify-end gap-2 mt-2">
             <Button variant="outline" size="sm" onClick={handleCancel}>
               Cancelar
@@ -181,7 +206,7 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
   }
 
   return (
-    <Card className="p-3 hover:shadow-md transition-shadow">
+    <Card className={`p-3 hover:shadow-md transition-shadow ${isAssignedToMe ? 'border-l-4 border-l-primary' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -202,7 +227,36 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
                   task.status === 'review' ? 'Revisión' :
                     task.status === 'blocked' ? 'Bloqueada' : 'Pendiente'}
             </Badge>
+            {isAssignedToMe && (
+              <Badge variant="default" className="bg-primary text-xs">Asignada a mí</Badge>
+            )}
           </div>
+
+          {/* Descripción */}
+          {task.description && (
+            <div className="mt-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded flex items-start gap-2">
+              <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>{task.description}</span>
+            </div>
+          )}
+
+          {/* Usuarios asignados */}
+          {assignedUsers.length > 0 && (
+            <div className="flex items-center gap-1 mt-2">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <div className="flex flex-wrap gap-1">
+                {assignedUsers.map(user => (
+                  <Badge key={user.id} variant="outline" className="flex items-center gap-1 px-1.5 py-0.5">
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback className="text-[8px]">{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-[10px]">{user.name.split(' ')[0]}</span>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -211,12 +265,6 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
                 {totalHours}/{task.estimatedHours}h
               </span>
             </span>
-            {task.assignedTo && (
-              <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                {task.assignedTo}
-              </span>
-            )}
             {task.completedAt && (
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3 text-green-500" />
@@ -248,7 +296,6 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
                     }}
                   />
 
-                  {/* Input para nueva subtarea - SIEMPRE VISIBLE cuando hay subtareas */}
                   <div className="flex items-center gap-2 mt-3">
                     <Input
                       value={newSubtaskName}
@@ -275,7 +322,7 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
             </div>
           )}
 
-          {/* Si NO hay subtareas, mostrar botón que abre input */}
+          {/* Botón para agregar subtareas si no hay */}
           {(!task.subtasks || task.subtasks.length === 0) && (
             <div className="mt-2">
               {!showAddSubtaskInput ? (
@@ -364,12 +411,12 @@ export function TaskItem({ task, onUpdate, onDelete, onAddTimeEntry }: TaskItemP
             </div>
           )}
 
-          {/* Historial de tiempos - AHORA CON FUNCIÓN PARA ELIMINAR */}
+          {/* Historial de tiempos */}
           {showTimeHistory && task.timeEntries && (
             <div className="mt-3">
               <TimeEntryList 
                 entries={task.timeEntries} 
-                onDeleteEntry={handleDeleteTimeEntry}  // ← NUEVO
+                onDeleteEntry={handleDeleteTimeEntry}
               />
             </div>
           )}

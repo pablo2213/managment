@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Module, Task } from '@/lib/data';
 import { KanbanCard } from './KanbanCard';
 import { CreateModuleModal } from '@/app/board/CreateModuleModal';
-import { Plus, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { getModuleActualHours } from '@/lib/utils';
 
 interface KanbanColumnProps {
   id: string;
@@ -35,22 +34,27 @@ export function KanbanColumn({
   // Calcular métricas de la columna
   let totalEstimated = 0;
   let totalActual = 0;
-  let delayedModules = 0;
+  let notStarted = 0;
+  let inProgress = 0;
+  let delayed = 0;
+  const today = new Date();
 
   modules.forEach(module => {
-    totalEstimated += module.estimatedHours;
-    
-    // Calcular horas reales del módulo
     const moduleTasks = tasks.filter(t => t.moduleId === module.id);
-    const actualHours = getModuleActualHours(module.id, moduleTasks);
-    totalActual += actualHours;
-    
-    // Calcular módulos retrasados
-    const today = new Date();
+    totalEstimated += moduleTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+    totalActual += moduleTasks.reduce((acc, t) => {
+      if (t.timeEntries) return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
+      return acc + (t.actualHours || 0);
+    }, 0);
+
+    // Contar estados temporales
+    const start = new Date(module.startDate);
     const end = new Date(module.endDate);
-    if (today > end && module.status !== 'completed') {
-      delayedModules++;
-    }
+    
+    if (module.status === 'completed') return;
+    if (today < start) notStarted++;
+    else if (today > end) delayed++;
+    else if (today >= start && today <= end) inProgress++;
   });
 
   const handleCreateModule = (moduleData: any) => {
@@ -73,22 +77,31 @@ export function KanbanColumn({
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  Tiempo real:
+                  Horas:
                 </span>
-                <span className="font-medium">{totalActual}h</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">vs estimado:</span>
-                <span className={`font-medium ${
-                  totalActual > totalEstimated ? 'text-red-500' : 'text-green-500'
-                }`}>
+                <span className="font-medium">
                   {totalActual}/{totalEstimated}h
                 </span>
               </div>
-              {delayedModules > 0 && (
+              
+              {notStarted > 0 && (
+                <div className="flex items-center gap-1 text-yellow-500">
+                  <Calendar className="h-3 w-3" />
+                  <span>{notStarted} por iniciar</span>
+                </div>
+              )}
+              
+              {inProgress > 0 && (
+                <div className="flex items-center gap-1 text-blue-500">
+                  <Clock className="h-3 w-3" />
+                  <span>{inProgress} en curso</span>
+                </div>
+              )}
+              
+              {delayed > 0 && (
                 <div className="flex items-center gap-1 text-red-500">
                   <AlertTriangle className="h-3 w-3" />
-                  <span>{delayedModules} retrasados</span>
+                  <span>{delayed} retrasados</span>
                 </div>
               )}
             </div>
@@ -98,20 +111,14 @@ export function KanbanColumn({
         <CardContent className="flex-1 overflow-y-auto">
           <div ref={setNodeRef} className="min-h-[200px]">
             <SortableContext items={modules.map(m => m.id)} strategy={verticalListSortingStrategy}>
-              {modules.map(module => {
-                // Calcular horas reales para pasar a la tarjeta
-                const moduleTasks = tasks.filter(t => t.moduleId === module.id);
-                const actualHours = getModuleActualHours(module.id, moduleTasks);
-                
-                return (
-                  <KanbanCard 
-                    key={module.id} 
-                    module={module}
-                    actualHours={actualHours}  // ← Pasamos horas reales
-                    onClick={() => onModuleClick(module)}
-                  />
-                );
-              })}
+              {modules.map(module => (
+                <KanbanCard 
+                  key={module.id} 
+                  module={module}
+                  tasks={tasks}
+                  onClick={() => onModuleClick(module)}
+                />
+              ))}
             </SortableContext>
           </div>
 

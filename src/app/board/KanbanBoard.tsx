@@ -30,11 +30,11 @@ const columns = [
   { id: 'done', title: 'Completado' },
 ];
 
-export function KanbanBoard({ 
-  projectId, 
+export function KanbanBoard({
+  projectId,
   onMetricsUpdate,
   onModulesUpdate,
-  onTasksUpdate 
+  onTasksUpdate
 }: KanbanBoardProps) {
   const [modules, setModules] = useState<Module[]>(
     initialModules.filter(m => m.projectId === projectId)
@@ -178,11 +178,13 @@ export function KanbanBoard({
       status: 'pending',
       column: columnId as any,
       priority: moduleData.priority,
-      estimatedHours: moduleData.estimatedHours || 0,
+      estimatedHours: 0,
       actualHours: 0,
       startDate: moduleData.startDate,
       endDate: moduleData.endDate,
       assignedTeam: moduleData.assignedTeam || undefined,
+      areaId: moduleData.areaId,        // ← NUEVO
+      leadId: moduleData.leadId,        // ← NUEVO
     };
 
     setModules(prev => [...prev, newModule]);
