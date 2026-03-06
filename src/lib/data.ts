@@ -20,7 +20,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'admin' | 'manager' | 'developer' | 'designer' | 'qa' | 'devops';
+  role: 'admin' | 'manager' | 'developer' | 'designer' | 'qa' | 'devops' | 'security';
   areaId?: string;
 }
 
@@ -91,6 +91,44 @@ export interface Task {
 }
 
 // ============================================
+// INTERFACES DE PLANNING
+// ============================================
+
+export interface PlanningTask {
+  id: string;
+  taskId: string;
+  taskName: string;
+  estimatedHours: number;
+  assignedUsers: string[];
+}
+
+export interface PlanningModule {
+  id: string;
+  moduleId: string;
+  moduleName: string;
+  projectName: string;
+  areaName?: string;
+  areaColor?: string;
+  estimatedHours: number;
+  assignedUsers: string[];
+  taskCount: number;
+  tasks: PlanningTask[];
+  status: 'pendiente' | 'en progreso' | 'completado';
+}
+
+export interface Planning {
+  id: string;
+  projectId: string;
+  projectName: string;
+  name: string;
+  weeks: string[];
+  description?: string;
+  modules: PlanningModule[];
+  createdAt: Date;
+  status: 'planificado' | 'en progreso' | 'completado';
+}
+
+// ============================================
 // EMPRESA ÚNICA
 // ============================================
 
@@ -111,54 +149,48 @@ export const areas: Area[] = [
     id: 'area1',
     name: 'Desarrollo Backend',
     description: 'APIs, bases de datos, lógica de negocio',
-    color: '#3b82f6', // azul
+    color: '#3b82f6',
   },
   {
     id: 'area2',
     name: 'Desarrollo Frontend',
     description: 'Interfaces de usuario, experiencia',
-    color: '#10b981', // verde
+    color: '#10b981',
   },
   {
     id: 'area3',
     name: 'Diseño UX/UI',
     description: 'Diseño de interfaces y experiencia',
-    color: '#f59e0b', // amarillo
+    color: '#f59e0b',
   },
   {
     id: 'area4',
     name: 'Calidad (QA)',
     description: 'Pruebas y aseguramiento de calidad',
-    color: '#8b5cf6', // púrpura
+    color: '#8b5cf6',
   },
   {
     id: 'area5',
     name: 'DevOps',
     description: 'Infraestructura, despliegue, CI/CD',
-    color: '#ef4444', // rojo
+    color: '#ef4444',
   },
   {
     id: 'area6',
     name: 'Producto',
     description: 'Gestión de producto y requisitos',
-    color: '#6b7280', // gris
+    color: '#6b7280',
   },
   {
     id: 'area7',
     name: 'Seguridad',
     description: 'Seguridad informática y cumplimiento',
-    color: '#14b8a6', // teal
-  },
-  {
-    id: 'area8',
-    name: 'Soporte',
-    description: 'Atención a clientes y soporte técnico',
-    color: '#f97316', // naranja
+    color: '#14b8a6',
   },
 ];
 
 // ============================================
-// USUARIOS (con áreas)
+// USUARIOS
 // ============================================
 
 export const users: User[] = [
@@ -167,7 +199,7 @@ export const users: User[] = [
     name: 'Ana García',
     email: 'ana.garcia@techcorp.com',
     role: 'developer',
-    areaId: 'area1', // Backend
+    areaId: 'area1',
     avatar: 'https://ui-avatars.com/api/?name=Ana+Garcia&background=3b82f6&color=fff',
   },
   {
@@ -175,7 +207,7 @@ export const users: User[] = [
     name: 'Carlos Ruiz',
     email: 'carlos.ruiz@techcorp.com',
     role: 'developer',
-    areaId: 'area1', // Backend
+    areaId: 'area1',
     avatar: 'https://ui-avatars.com/api/?name=Carlos+Ruiz&background=3b82f6&color=fff',
   },
   {
@@ -183,7 +215,7 @@ export const users: User[] = [
     name: 'Laura Méndez',
     email: 'laura.mendez@techcorp.com',
     role: 'designer',
-    areaId: 'area3', // Diseño
+    areaId: 'area3',
     avatar: 'https://ui-avatars.com/api/?name=Laura+Mendez&background=f59e0b&color=fff',
   },
   {
@@ -191,7 +223,7 @@ export const users: User[] = [
     name: 'Elena Gómez',
     email: 'elena.gomez@techcorp.com',
     role: 'qa',
-    areaId: 'area4', // QA
+    areaId: 'area4',
     avatar: 'https://ui-avatars.com/api/?name=Elena+Gomez&background=8b5cf6&color=fff',
   },
   {
@@ -199,7 +231,7 @@ export const users: User[] = [
     name: 'Miguel Torres',
     email: 'miguel.torres@techcorp.com',
     role: 'devops',
-    areaId: 'area5', // DevOps
+    areaId: 'area5',
     avatar: 'https://ui-avatars.com/api/?name=Miguel+Torres&background=ef4444&color=fff',
   },
   {
@@ -207,7 +239,7 @@ export const users: User[] = [
     name: 'Javier López',
     email: 'javier.lopez@techcorp.com',
     role: 'developer',
-    areaId: 'area2', // Frontend
+    areaId: 'area2',
     avatar: 'https://ui-avatars.com/api/?name=Javier+Lopez&background=10b981&color=fff',
   },
   {
@@ -215,7 +247,7 @@ export const users: User[] = [
     name: 'Sofía Martínez',
     email: 'sofia.martinez@techcorp.com',
     role: 'manager',
-    areaId: 'area6', // Producto
+    areaId: 'area6',
     avatar: 'https://ui-avatars.com/api/?name=Sofia+Martinez&background=6b7280&color=fff',
   },
   {
@@ -223,7 +255,7 @@ export const users: User[] = [
     name: 'David Rodríguez',
     email: 'david.rodriguez@techcorp.com',
     role: 'developer',
-    areaId: 'area2', // Frontend
+    areaId: 'area2',
     avatar: 'https://ui-avatars.com/api/?name=David+Rodriguez&background=10b981&color=fff',
   },
   {
@@ -231,7 +263,7 @@ export const users: User[] = [
     name: 'Patricia Sánchez',
     email: 'patricia.sanchez@techcorp.com',
     role: 'qa',
-    areaId: 'area4', // QA
+    areaId: 'area4',
     avatar: 'https://ui-avatars.com/api/?name=Patricia+Sanchez&background=8b5cf6&color=fff',
   },
   {
@@ -239,7 +271,7 @@ export const users: User[] = [
     name: 'Jorge Fernández',
     email: 'jorge.fernandez@techcorp.com',
     role: 'devops',
-    areaId: 'area5', // DevOps
+    areaId: 'area5',
     avatar: 'https://ui-avatars.com/api/?name=Jorge+Fernandez&background=ef4444&color=fff',
   },
   {
@@ -247,7 +279,7 @@ export const users: User[] = [
     name: 'Carmen López',
     email: 'carmen.lopez@techcorp.com',
     role: 'designer',
-    areaId: 'area3', // Diseño
+    areaId: 'area3',
     avatar: 'https://ui-avatars.com/api/?name=Carmen+Lopez&background=f59e0b&color=fff',
   },
   {
@@ -255,13 +287,13 @@ export const users: User[] = [
     name: 'Antonio Gil',
     email: 'antonio.gil@techcorp.com',
     role: 'security',
-    areaId: 'area7', // Seguridad
+    areaId: 'area7',
     avatar: 'https://ui-avatars.com/api/?name=Antonio+Gil&background=14b8a6&color=fff',
   },
 ];
 
 // ============================================
-// PROYECTO ÚNICO
+// PROYECTOS
 // ============================================
 
 export const projects: Project[] = [
@@ -333,15 +365,11 @@ export const projects: Project[] = [
 ];
 
 // ============================================
-// MÓDULOS - 30 MÓDULOS CON DIFERENTES CASOS
+// MÓDULOS
 // ============================================
 
 export const modules: Module[] = [
-  // ============================================
-  // PROYECTO 1: E-commerce (18 módulos)
-  // ============================================
-
-  // Completados (6)
+  // PROYECTO 1: E-commerce
   {
     id: 'm1',
     projectId: 'p1',
@@ -443,8 +471,6 @@ export const modules: Module[] = [
     leadId: 'u1',
     dependencies: ['m5'],
   },
-
-  // En progreso (7)
   {
     id: 'm7',
     projectId: 'p1',
@@ -564,8 +590,6 @@ export const modules: Module[] = [
     leadId: 'u6',
     dependencies: ['m5', 'm6', 'm7'],
   },
-
-  // Pendientes (3)
   {
     id: 'm14',
     projectId: 'p1',
@@ -617,8 +641,6 @@ export const modules: Module[] = [
     leadId: 'u1',
     dependencies: ['m7', 'm8'],
   },
-
-  // Bloqueados (1)
   {
     id: 'm17',
     projectId: 'p1',
@@ -636,8 +658,6 @@ export const modules: Module[] = [
     leadId: 'u5',
     dependencies: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
   },
-
-  // En espera (1)
   {
     id: 'm18',
     projectId: 'p1',
@@ -655,11 +675,7 @@ export const modules: Module[] = [
     leadId: 'u8',
     dependencies: ['m3', 'm5', 'm8'],
   },
-
-  // ============================================
-  // PROYECTO 2: App Gestión (5 módulos)
-  // ============================================
-
+  // PROYECTO 2: App Gestión
   {
     id: 'm19',
     projectId: 'p2',
@@ -744,11 +760,7 @@ export const modules: Module[] = [
     leadId: 'u1',
     dependencies: ['m22'],
   },
-
-  // ============================================
-  // PROYECTO 3: Rediseño de Marca (3 módulos)
-  // ============================================
-
+  // PROYECTO 3: Rediseño de Marca
   {
     id: 'm24',
     projectId: 'p3',
@@ -799,11 +811,7 @@ export const modules: Module[] = [
     leadId: 'u3',
     dependencies: ['m25'],
   },
-
-  // ============================================
-  // PROYECTO 4: Migración Cloud (2 módulos)
-  // ============================================
-
+  // PROYECTO 4: Migración Cloud
   {
     id: 'm27',
     projectId: 'p4',
@@ -837,11 +845,7 @@ export const modules: Module[] = [
     leadId: 'u10',
     dependencies: ['m27'],
   },
-
-  // ============================================
-  // PROYECTO 5: Dashboard Financiero (2 módulos)
-  // ============================================
-
+  // PROYECTO 5: Dashboard Financiero
   {
     id: 'm29',
     projectId: 'p5',
@@ -878,13 +882,11 @@ export const modules: Module[] = [
 ];
 
 // ============================================
-// TAREAS - 50 TAREAS CON DIFERENTES ESTADOS
+// TAREAS
 // ============================================
 
 export const tasks: Task[] = [
-  // ============================================
-  // TAREAS PARA MÓDULO 1 (Autenticación) - COMPLETADAS
-  // ============================================
+  // Módulo 1 (Autenticación)
   {
     id: 't1',
     moduleId: 'm1',
@@ -927,10 +929,7 @@ export const tasks: Task[] = [
       { id: 'te10', taskId: 't2', userId: 'u1', userName: 'Ana García', hours: 5, date: '2026-02-10', description: 'UI' },
     ],
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 3 (Catálogo) - COMPLETADAS
-  // ============================================
+  // Módulo 3 (Catálogo)
   {
     id: 't3',
     moduleId: 'm3',
@@ -959,10 +958,7 @@ export const tasks: Task[] = [
     createdAt: '2026-02-20',
     completedAt: '2026-03-25',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 7 (Pedidos) - EN PROGRESO
-  // ============================================
+  // Módulo 7 (Pedidos)
   {
     id: 't5',
     moduleId: 'm7',
@@ -1016,10 +1012,7 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-05-20',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 8 (Admin) - EN PROGRESO
-  // ============================================
+  // Módulo 8 (Admin)
   {
     id: 't9',
     moduleId: 'm8',
@@ -1072,10 +1065,7 @@ export const tasks: Task[] = [
     priority: 'low',
     createdAt: '2026-06-05',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 13 (App Móvil) - MIXTAS
-  // ============================================
+  // Módulo 13 (App Móvil)
   {
     id: 't13',
     moduleId: 'm13',
@@ -1129,10 +1119,7 @@ export const tasks: Task[] = [
     priority: 'high',
     createdAt: '2026-08-20',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 17 (Migración) - BLOQUEADAS
-  // ============================================
+  // Módulo 17 (Migración)
   {
     id: 't17',
     moduleId: 'm17',
@@ -1172,10 +1159,7 @@ export const tasks: Task[] = [
     priority: 'high',
     createdAt: '2026-09-15',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 19 (Gestión Empleados)
-  // ============================================
+  // Módulo 19 (Gestión Empleados)
   {
     id: 't20',
     moduleId: 'm19',
@@ -1230,10 +1214,7 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-04-15',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 20 (Control Asistencia)
-  // ============================================
+  // Módulo 20 (Control Asistencia)
   {
     id: 't24',
     moduleId: 'm20',
@@ -1288,10 +1269,7 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-05-01',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 24 (Investigación Marca)
-  // ============================================
+  // Módulo 24 (Investigación Marca)
   {
     id: 't28',
     moduleId: 'm24',
@@ -1334,10 +1312,7 @@ export const tasks: Task[] = [
     createdAt: '2026-02-25',
     completedAt: '2026-03-15',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 25 (Diseño Identidad)
-  // ============================================
+  // Módulo 25 (Diseño Identidad)
   {
     id: 't31',
     moduleId: 'm25',
@@ -1393,10 +1368,7 @@ export const tasks: Task[] = [
     priority: 'medium',
     createdAt: '2026-04-15',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 27 (Análisis Infraestructura)
-  // ============================================
+  // Módulo 27 (Análisis Infraestructura)
   {
     id: 't35',
     moduleId: 'm27',
@@ -1438,10 +1410,7 @@ export const tasks: Task[] = [
     priority: 'high',
     createdAt: '2026-04-15',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 29 (Backend Financiero)
-  // ============================================
+  // Módulo 29 (Backend Financiero)
   {
     id: 't38',
     moduleId: 'm29',
@@ -1484,10 +1453,7 @@ export const tasks: Task[] = [
     createdAt: '2026-01-20',
     completedAt: '2026-02-25',
   },
-
-  // ============================================
-  // TAREAS PARA MÓDULO 30 (Frontend Dashboard)
-  // ============================================
+  // Módulo 30 (Frontend Dashboard)
   {
     id: 't41',
     moduleId: 'm30',
@@ -1541,10 +1507,7 @@ export const tasks: Task[] = [
     priority: 'low',
     createdAt: '2026-03-15',
   },
-
-  // ============================================
-  // TAREAS ADICIONALES CON SOBRECOSTO Y AHORRO
-  // ============================================
+  // Tareas adicionales
   {
     id: 't45',
     moduleId: 'm4',
@@ -1626,3 +1589,256 @@ export const tasks: Task[] = [
     createdAt: '2026-07-01',
   },
 ];
+
+// ============================================
+// PLANNINGS (INTEGRADOS)
+// ============================================
+
+export const plannings: Planning[] = [
+  {
+    id: 'plan-001',
+    projectId: 'p1',
+    projectName: 'Plataforma E-commerce Enterprise',
+    name: 'Sprint 12 - Marzo',
+    weeks: ['2026-03-18', '2026-03-25'],
+    description: 'Finalización de carrito y pagos',
+    modules: [
+      {
+        id: 'planmod-001',
+        moduleId: 'm5',
+        moduleName: 'Carrito de Compras',
+        projectName: 'Plataforma E-commerce Enterprise',
+        areaName: 'Desarrollo Frontend',
+        areaColor: '#10b981',
+        estimatedHours: 64,
+        assignedUsers: ['u1', 'u6', 'u8'],
+        taskCount: 2,
+        tasks: [
+          { id: 'task-plan-1', taskId: 't6', taskName: 'Flujo de creación', estimatedHours: 20, assignedUsers: ['u6', 'u8'] },
+          { id: 'task-plan-2', taskId: 't7', taskName: 'Estados y tracking', estimatedHours: 16, assignedUsers: ['u2'] },
+        ],
+        status: 'en progreso',
+      },
+      {
+        id: 'planmod-002',
+        moduleId: 'm6',
+        moduleName: 'Procesador de Pagos',
+        projectName: 'Plataforma E-commerce Enterprise',
+        areaName: 'Desarrollo Backend',
+        areaColor: '#3b82f6',
+        estimatedHours: 40,
+        assignedUsers: ['u1', 'u2'],
+        taskCount: 1,
+        tasks: [
+          { id: 'task-plan-3', taskId: 't8', taskName: 'Panel de pedidos', estimatedHours: 18, assignedUsers: ['u6'] },
+        ],
+        status: 'pendiente',
+      },
+    ],
+    createdAt: new Date('2026-03-15'),
+    status: 'en progreso',
+  },
+  {
+    id: 'plan-002',
+    projectId: 'p1',
+    projectName: 'Plataforma E-commerce Enterprise',
+    name: 'Sprint 13 - Abril',
+    weeks: ['2026-04-01', '2026-04-08', '2026-04-15'],
+    description: 'Panel de administración y envíos',
+    modules: [
+      {
+        id: 'planmod-003',
+        moduleId: 'm8',
+        moduleName: 'Panel de Administración',
+        projectName: 'Plataforma E-commerce Enterprise',
+        areaName: 'Desarrollo Frontend',
+        areaColor: '#10b981',
+        estimatedHours: 54,
+        assignedUsers: ['u6', 'u8', 'u2'],
+        taskCount: 3,
+        tasks: [
+          { id: 'task-plan-4', taskId: 't9', taskName: 'Dashboard principal', estimatedHours: 20, assignedUsers: ['u6', 'u8'] },
+          { id: 'task-plan-5', taskId: 't10', taskName: 'Gestión de productos', estimatedHours: 18, assignedUsers: ['u2'] },
+          { id: 'task-plan-6', taskId: 't11', taskName: 'Gestión de usuarios', estimatedHours: 16, assignedUsers: ['u6'] },
+        ],
+        status: 'en progreso',
+      },
+      {
+        id: 'planmod-004',
+        moduleId: 'm9',
+        moduleName: 'Sistema de Envíos',
+        projectName: 'Plataforma E-commerce Enterprise',
+        areaName: 'Desarrollo Backend',
+        areaColor: '#3b82f6',
+        estimatedHours: 45,
+        assignedUsers: ['u2', 'u1'],
+        taskCount: 1,
+        tasks: [
+          { id: 'task-plan-7', taskId: 't12', taskName: 'Reportes', estimatedHours: 20, assignedUsers: ['u4', 'u9'] },
+        ],
+        status: 'pendiente',
+      },
+    ],
+    createdAt: new Date('2026-03-28'),
+    status: 'planificado',
+  },
+  {
+    id: 'plan-003',
+    projectId: 'p2',
+    projectName: 'App de Gestión Interna',
+    name: 'Sprint 8 - Mayo',
+    weeks: ['2026-05-06', '2026-05-13', '2026-05-20'],
+    description: 'Control de asistencia y vacaciones',
+    modules: [
+      {
+        id: 'planmod-005',
+        moduleId: 'm20',
+        moduleName: 'Control de Asistencia',
+        projectName: 'App de Gestión Interna',
+        areaName: 'Desarrollo Frontend',
+        areaColor: '#10b981',
+        estimatedHours: 37,
+        assignedUsers: ['u6', 'u2'],
+        taskCount: 2,
+        tasks: [
+          { id: 'task-plan-8', taskId: 't26', taskName: 'Frontend asistencia', estimatedHours: 22, assignedUsers: ['u6'] },
+          { id: 'task-plan-9', taskId: 't27', taskName: 'Reportes de asistencia', estimatedHours: 15, assignedUsers: ['u4', 'u9'] },
+        ],
+        status: 'en progreso',
+      },
+      {
+        id: 'planmod-006',
+        moduleId: 'm21',
+        moduleName: 'Gestión de Vacaciones',
+        projectName: 'App de Gestión Interna',
+        areaName: 'Desarrollo Frontend',
+        areaColor: '#10b981',
+        estimatedHours: 10,
+        assignedUsers: ['u8'],
+        taskCount: 1,
+        tasks: [
+          { id: 'task-plan-10', taskId: 't49', taskName: 'Gestión de vacaciones', estimatedHours: 10, assignedUsers: ['u8'] },
+        ],
+        status: 'en progreso',
+      },
+    ],
+    createdAt: new Date('2026-05-01'),
+    status: 'en progreso',
+  },
+  {
+    id: 'plan-004',
+    projectId: 'p3',
+    projectName: 'Rediseño de Marca',
+    name: 'Sprint 5 - Abril/Mayo',
+    weeks: ['2026-04-22', '2026-04-29', '2026-05-06'],
+    description: 'Manual de marca y aplicaciones',
+    modules: [
+      {
+        id: 'planmod-007',
+        moduleId: 'm25',
+        moduleName: 'Diseño de Identidad',
+        projectName: 'Rediseño de Marca',
+        areaName: 'Diseño UX/UI',
+        areaColor: '#f59e0b',
+        estimatedHours: 25,
+        assignedUsers: ['u3', 'u11'],
+        taskCount: 1,
+        tasks: [
+          { id: 'task-plan-11', taskId: 't34', taskName: 'Manual de marca', estimatedHours: 25, assignedUsers: ['u3', 'u11'] },
+        ],
+        status: 'en progreso',
+      },
+      {
+        id: 'planmod-008',
+        moduleId: 'm26',
+        moduleName: 'Aplicaciones de Marca',
+        projectName: 'Rediseño de Marca',
+        areaName: 'Diseño UX/UI',
+        areaColor: '#f59e0b',
+        estimatedHours: 40,
+        assignedUsers: ['u3', 'u11'],
+        taskCount: 1,
+        tasks: [
+          { id: 'task-plan-12', taskId: 't34', taskName: 'Manual de marca', estimatedHours: 25, assignedUsers: ['u3', 'u11'] },
+        ],
+        status: 'pendiente',
+      },
+    ],
+    createdAt: new Date('2026-04-15'),
+    status: 'planificado',
+  },
+  {
+    id: 'plan-005',
+    projectId: 'p5',
+    projectName: 'Dashboard Financiero',
+    name: 'Sprint 6 - Marzo/Abril',
+    weeks: ['2026-03-11', '2026-03-18', '2026-03-25'],
+    description: 'Finalización de dashboard',
+    modules: [
+      {
+        id: 'planmod-009',
+        moduleId: 'm30',
+        moduleName: 'Frontend Dashboard',
+        projectName: 'Dashboard Financiero',
+        areaName: 'Desarrollo Frontend',
+        areaColor: '#10b981',
+        estimatedHours: 65,
+        assignedUsers: ['u6', 'u8'],
+        taskCount: 3,
+        tasks: [
+          { id: 'task-plan-13', taskId: 't42', taskName: 'Gráficos financieros', estimatedHours: 30, assignedUsers: ['u6', 'u8'] },
+          { id: 'task-plan-14', taskId: 't43', taskName: 'Filtros interactivos', estimatedHours: 20, assignedUsers: ['u8'] },
+          { id: 'task-plan-15', taskId: 't44', taskName: 'Exportación de datos', estimatedHours: 15, assignedUsers: ['u6'] },
+        ],
+        status: 'en progreso',
+      },
+    ],
+    createdAt: new Date('2026-03-05'),
+    status: 'en progreso',
+  },
+];
+
+// ============================================
+// TIME ENTRIES ADICIONALES
+// ============================================
+
+export const timeEntries: TimeEntry[] = [
+  // TimeEntries para tareas en progreso (últimas semanas)
+  { id: 'te101', taskId: 't6', userId: 'u6', userName: 'Javier López', hours: 6, date: '2026-05-12', description: 'Checkout' },
+  { id: 'te102', taskId: 't6', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-05-14', description: 'Validaciones' },
+  { id: 'te103', taskId: 't6', userId: 'u8', userName: 'David Rodríguez', hours: 4, date: '2026-05-13', description: 'UI' },
+  { id: 'te104', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 6, date: '2026-05-16', description: 'Estados' },
+  { id: 'te105', taskId: 't7', userId: 'u2', userName: 'Carlos Ruiz', hours: 4, date: '2026-05-18', description: 'Tracking' },
+  { id: 'te106', taskId: 't9', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-05-17', description: 'Dashboard' },
+  { id: 'te107', taskId: 't9', userId: 'u8', userName: 'David Rodríguez', hours: 4, date: '2026-05-19', description: 'Componentes' },
+  { id: 'te108', taskId: 't10', userId: 'u2', userName: 'Carlos Ruiz', hours: 5, date: '2026-05-20', description: 'Admin productos' },
+  { id: 'te109', taskId: 't14', userId: 'u6', userName: 'Javier López', hours: 6, date: '2026-05-21', description: 'Productos app' },
+  { id: 'te110', taskId: 't22', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-05-15', description: 'Frontend empleados' },
+  { id: 'te111', taskId: 't22', userId: 'u8', userName: 'David Rodríguez', hours: 4, date: '2026-05-16', description: 'Tablas' },
+  { id: 'te112', taskId: 't23', userId: 'u8', userName: 'David Rodríguez', hours: 5, date: '2026-05-18', description: 'Filtros' },
+  { id: 'te113', taskId: 't26', userId: 'u6', userName: 'Javier López', hours: 6, date: '2026-05-19', description: 'Asistencia' },
+  { id: 'te114', taskId: 't34', userId: 'u3', userName: 'Laura Méndez', hours: 4, date: '2026-05-17', description: 'Manual de marca' },
+  { id: 'te115', taskId: 't34', userId: 'u11', userName: 'Carmen López', hours: 4, date: '2026-05-18', description: 'Diseño' },
+  { id: 'te116', taskId: 't37', userId: 'u10', userName: 'Jorge Fernández', hours: 5, date: '2026-05-16', description: 'Plan migración' },
+  { id: 'te117', taskId: 't42', userId: 'u6', userName: 'Javier López', hours: 5, date: '2026-05-20', description: 'Gráficos' },
+  { id: 'te118', taskId: 't42', userId: 'u8', userName: 'David Rodríguez', hours: 4, date: '2026-05-21', description: 'Visualizaciones' },
+  { id: 'te119', taskId: 't43', userId: 'u8', userName: 'David Rodríguez', hours: 5, date: '2026-05-19', description: 'Filtros' },
+  { id: 'te120', taskId: 't48', userId: 'u4', userName: 'Elena Gómez', hours: 3, date: '2026-05-15', description: 'Moderación' },
+  { id: 'te121', taskId: 't48', userId: 'u9', userName: 'Patricia Sánchez', hours: 3, date: '2026-05-16', description: 'Revisión' },
+  { id: 'te122', taskId: 't49', userId: 'u8', userName: 'David Rodríguez', hours: 3, date: '2026-05-18', description: 'Vacaciones' },
+];
+
+// ============================================
+// EXPORTACIÓN UNIFICADA
+// ============================================
+
+export default {
+  companies,
+  areas,
+  users,
+  projects,
+  modules,
+  tasks,
+  plannings,
+  timeEntries,
+};

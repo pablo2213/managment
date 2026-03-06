@@ -1,26 +1,29 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  User, Clock, CheckCircle2, Filter, Download, 
-  Layers, Activity, Calendar, AlertTriangle,
-  BarChart3, Users, Award
+  User, Clock, CheckCircle2, Filter, 
+  Download, Users, Layers, Activity, Calendar,
+  FolderTree, CheckSquare, Target, Plus, Settings,
+  BarChart3, TrendingUp
 } from 'lucide-react';
 import { users, tasks, modules, projects, areas } from '@/lib/data';
+import * as planningService from '@/lib/planningSimple';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -28,912 +31,977 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { UserCommitmentsView } from '@/components/planning/UserCommitmentsView';
+// Importar componentes de planning
 import { PlanningSimpleView } from '@/components/planning/PlanningSimpleView';
 
 interface UserTasksDashboardProps {
   initialUserId?: string;
 }
 
+// Generar semanas disponibles
+const generateWeeks = () => {
+  const weeks = [];
+  const today = new Date();
+  
+  for (let i = -4; i < 12; i++) {
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + (i * 7));
+    const day = startDate.getDay();
+    const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+    startDate.setDate(diff);
+    
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    
+    const value = startDate.toISOString().split('T')[0];
+    const label = `${startDate.getDate()}/${startDate.getMonth()+1} - ${endDate.getDate()}/${endDate.getMonth()+1}`;
+    
+    weeks.push({ value, label, fullLabel: label });
+  }
+  
+  return weeks;
+};
+
+const AVAILABLE_WEEKS = generateWeeks();
+
 export function UserTasksDashboard({ initialUserId }: UserTasksDashboardProps) {
-  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId || 'all');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [selectedAreaId, setSelectedAreaId] = useState<string>('all');
   const [selectedModuleId, setSelectedModuleId] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [sortMetric, setSortMetric] = useState<'hours' | 'completion' | 'tasks'>('hours');
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId || 'all');
+  const [activeTab, setActiveTab] = useState<string>('usuarios');
+  const [selectedPlanningId, setSelectedPlanningId] = useState<string>('current');
+  const [selectedDateRange, setSelectedDateRange] = useState<'week' | 'month' | 'all'>('week');
   
-  const [dateRange, setDateRange] = useState<{
-    from: Date;
-    to: Date;
-  }>({
-    from: new Date(new Date().setDate(new Date().getDate() - 30)),
-    to: new Date()
-  });
-  const [viewType, setViewType] = useState<'week' | 'month' | 'custom'>('month');
+  // Estado para creación de planning
+  const [showCreatePlanning, setShowCreatePlanning] = useState(false);
+  const [newPlanningProject, setNewPlanningProject] = useState('');
+  const [newPlanningWeeks, setNewPlanningWeeks] = useState<string[]>([]);
+  const [newPlanningDescription, setNewPlanningDescription] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Estado para mostrar/ocultar planificador
+  const [showPlanner, setShowPlanner] = useState(false);
+
+  // Obtener todos los plannings
+  const allPlannings = planningService.getAllPlannings();
+  
+  // Planning seleccionado
+  const currentPlanning = useMemo(() => {
+    if (selectedPlanningId === 'current') {
+      return allPlannings.length > 0 ? allPlannings[0] : null;
+    }
+    return allPlannings.find(p => p.id === selectedPlanningId) || null;
+  }, [allPlannings, selectedPlanningId, refreshKey]);
 
   // ============================================
-  // FILTRADO DE DATOS
+  // FUNCIONES DE PLANNING
   // ============================================
   
-  const filteredModulesByProject = useMemo(() => {
+  const handleCreatePlanning = () => {
+    if (!newPlanningProject || newPlanningWeeks.length === 0) return;
+
+    const project = projects.find(p => p.id === newPlanningProject);
+    if (!project) return;
+
+    // Crear planning
+    planningService.createPlanning(
+      newPlanningProject,
+      project.name,
+      newPlanningWeeks,
+      newPlanningDescription
+    );
+
+    // Forzar refresco
+    setRefreshKey(prev => prev + 1);
+    
+    // Limpiar y cerrar
+    setShowCreatePlanning(false);
+    setNewPlanningProject('');
+    setNewPlanningWeeks([]);
+    setNewPlanningDescription('');
+    
+    // Seleccionar el planning recién creado
+    const updatedPlannings = planningService.getAllPlannings();
+    if (updatedPlannings.length > 0) {
+      setSelectedPlanningId(updatedPlannings[0].id);
+    }
+    
+    // Mostrar el planificador
+    setShowPlanner(true);
+  };
+
+  // ============================================
+  // FILTROS
+  // ============================================
+  
+  const modulesByProject = useMemo(() => {
     if (selectedProjectId === 'all') return modules;
     return modules.filter(m => m.projectId === selectedProjectId);
   }, [selectedProjectId]);
 
-  const filteredModulesByArea = useMemo(() => {
-    if (selectedAreaId === 'all') return filteredModulesByProject;
-    return filteredModulesByProject.filter(m => m.areaId === selectedAreaId);
-  }, [selectedAreaId, filteredModulesByProject]);
+  const modulesByArea = useMemo(() => {
+    if (selectedAreaId === 'all') return modulesByProject;
+    return modulesByProject.filter(m => m.areaId === selectedAreaId);
+  }, [selectedAreaId, modulesByProject]);
 
   const filteredModules = useMemo(() => {
-    if (selectedModuleId === 'all') return filteredModulesByArea;
-    return filteredModulesByArea.filter(m => m.id === selectedModuleId);
-  }, [selectedModuleId, filteredModulesByArea]);
+    if (selectedModuleId === 'all') return modulesByArea;
+    return modulesByArea.filter(m => m.id === selectedModuleId);
+  }, [selectedModuleId, modulesByArea]);
 
-  const moduleIds = filteredModules.map(m => m.id);
+  const moduleIds = useMemo(() => {
+    return filteredModules.map(m => m.id);
+  }, [filteredModules]);
 
-  // ============================================
-  // TAREAS FILTRADAS
-  // ============================================
+  const tasksByModule = useMemo(() => {
+    return tasks.filter(t => moduleIds.includes(t.moduleId));
+  }, [moduleIds]);
 
   const filteredTasks = useMemo(() => {
-    let filtered = tasks.filter(t => moduleIds.includes(t.moduleId));
+    if (selectedUserId === 'all') return tasksByModule;
+    return tasksByModule.filter(t => t.assignedTo?.includes(selectedUserId));
+  }, [tasksByModule, selectedUserId]);
+
+  const availableUsers = useMemo(() => {
+    if (selectedUserId !== 'all') return users;
     
-    if (selectedUserId !== 'all') {
-      filtered = filtered.filter(t => t.assignedTo?.includes(selectedUserId));
-    }
-
-    return filtered;
-  }, [moduleIds, selectedUserId]);
-
-  const enrichedTasks = useMemo(() => {
-    return filteredTasks.map(task => {
-      const taskModule = modules.find(m => m.id === task.moduleId);
-      const taskProject = taskModule ? projects.find(p => p.id === taskModule.projectId) : null;
-      const taskArea = taskModule?.areaId ? areas.find(a => a.id === taskModule.areaId) : null;
-      const taskUsers = users.filter(u => task.assignedTo?.includes(u.id));
-
-      const totalActualHours = task.timeEntries 
-        ? task.timeEntries.reduce((s, e) => s + e.hours, 0) 
-        : task.actualHours || 0;
-
-      return {
-        ...task,
-        module: taskModule,
-        project: taskProject,
-        area: taskArea,
-        assignedUsers: taskUsers,
-        totalActualHours,
-        progress: task.estimatedHours > 0 
-          ? Math.round((totalActualHours / task.estimatedHours) * 100) 
-          : 0,
-      };
+    const userIds = new Set<string>();
+    tasksByModule.forEach(task => {
+      task.assignedTo?.forEach(id => userIds.add(id));
     });
-  }, [filteredTasks]);
-
-  // ============================================
-  // ESTADÍSTICAS DE USUARIOS
-  // ============================================
-
-  const userStats = useMemo(() => {
     
-    return users
-      .map(user => {
-        // Filtrar tareas del usuario
-        const userTasks = tasks.filter(t => {
-          const isAssigned = t.assignedTo?.includes(user.id) || false;
-          if (!isAssigned) return false;
-
-          if (selectedProjectId !== 'all') {
-            const taskModule = modules.find(m => m.id === t.moduleId);
-            if (taskModule?.projectId !== selectedProjectId) return false;
-          }
-
-          if (selectedAreaId !== 'all') {
-            const taskModule = modules.find(m => m.id === t.moduleId);
-            if (taskModule?.areaId !== selectedAreaId) return false;
-          }
-
-          if (selectedModuleId !== 'all') {
-            if (t.moduleId !== selectedModuleId) return false;
-          }
-
-          return true;
-        });
-        
-        // Calcular horas en el rango de fechas
-        let totalHoursInRange = 0;
-        let hoursByDate: Record<string, number> = {};
-        
-        userTasks.forEach(task => {
-          if (task.timeEntries) {
-            task.timeEntries.forEach(entry => {
-              const entryDate = new Date(entry.date);
-              if (entryDate >= dateRange.from && entryDate <= dateRange.to) {
-                totalHoursInRange += entry.hours;
-                const dateKey = entryDate.toISOString().split('T')[0];
-                hoursByDate[dateKey] = (hoursByDate[dateKey] || 0) + entry.hours;
-              }
-            });
-          } else if (task.actualHours && task.createdAt) {
-            const taskDate = new Date(task.createdAt);
-            if (taskDate >= dateRange.from && taskDate <= dateRange.to) {
-              totalHoursInRange += task.actualHours;
-            }
-          }
-        });
-
-        const totalHoursAllTime = userTasks.reduce((acc, t) => {
-          if (t.timeEntries) return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
-          return acc + (t.actualHours || 0);
-        }, 0);
-
-        const totalTasks = userTasks.length;
-        const completedTasks = userTasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = userTasks.filter(t => t.status === 'in-progress' || t.status === 'review').length;
-        const pendingTasks = userTasks.filter(t => t.status === 'pending').length;
-        const blockedTasks = userTasks.filter(t => t.status === 'blocked').length;
-        
-        const estimatedHours = userTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
-        
-        const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        const timeProgress = estimatedHours > 0 ? Math.round((totalHoursAllTime / estimatedHours) * 100) : 0;
-
-        const userProjectIds = new Set(
-          userTasks
-            .map(t => modules.find(m => m.id === t.moduleId)?.projectId)
-            .filter(Boolean)
-        );
-        
-        const tasksByArea = userTasks.reduce((acc, task) => {
-          const taskModule = modules.find(m => m.id === task.moduleId);
-          const areaId = taskModule?.areaId;
-          if (areaId) {
-            acc[areaId] = (acc[areaId] || 0) + 1;
-          }
-          return acc;
-        }, {} as Record<string, number>);
-
-        const topAreaId = Object.entries(tasksByArea)
-          .sort(([,a], [,b]) => b - a)[0]?.[0];
-        const topArea = topAreaId ? areas.find(a => a.id === topAreaId) : null;
-
-        const daysInPeriod = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-        const dailyAverage = totalHoursInRange > 0 ? Math.round((totalHoursInRange / daysInPeriod) * 10) / 10 : 0;
-        
-        // Obtener planning semanal
-        let workloadLevel: 'baja' | 'media' | 'alta' = 'baja';
-        if (totalHoursInRange > 0) {
-          if (dailyAverage <= 4) workloadLevel = 'baja';
-          else if (dailyAverage <= 7) workloadLevel = 'media';
-          else workloadLevel = 'alta';
-        }
-
-        const hasActivityInRange = totalHoursInRange > 0;
-
-        return {
-          user,
-          totalTasks,
-          completedTasks,
-          inProgressTasks,
-          pendingTasks,
-          blockedTasks,
-          totalHoursInRange,
-          totalHoursAllTime,
-          estimatedHours,
-          completionRate,
-          timeProgress,
-          projectsCount: userProjectIds.size,
-          topArea,
-          dailyAverage,
-          workloadLevel,
-          hoursByDate,
-          hasActivityInRange,
-        };
-      })
-      .filter(stat => selectedProjectId !== 'all' ? stat.hasActivityInRange : true)
-      .sort((a, b) => {
-        if (a.hasActivityInRange && !b.hasActivityInRange) return -1;
-        if (!a.hasActivityInRange && b.hasActivityInRange) return 1;
-        
-        if (a.hasActivityInRange && b.hasActivityInRange) {
-          switch(sortMetric) {
-            case 'hours': return b.totalHoursInRange - a.totalHoursInRange;
-            case 'completion': return b.completionRate - a.completionRate;
-            case 'tasks': return b.totalTasks - a.totalTasks;
-            default: return 0;
-          }
-        }
-        
-        return a.user.name.localeCompare(b.user.name);
-      });
-  }, [selectedProjectId, selectedAreaId, selectedModuleId, dateRange, sortMetric]);
-
-  const totalFilteredHours = enrichedTasks.reduce((acc, t) => acc + t.totalActualHours, 0);
-  const totalFilteredEstimated = enrichedTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
-  const completedFilteredTasks = enrichedTasks.filter(t => t.status === 'completed').length;
+    return users.filter(u => userIds.has(u.id));
+  }, [tasksByModule, selectedUserId]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const getWorkloadColor = (level: string) => {
-    switch(level) {
-      case 'baja': return 'bg-blue-500';
-      case 'media': return 'bg-amber-500';
-      case 'alta': return 'bg-purple-500';
-      default: return 'bg-gray-500';
-    }
-  };
+  // ============================================
+  // ESTADÍSTICAS DE USUARIOS (userStats)
+  // ============================================
+  
+  const userStats = useMemo(() => {
+    return availableUsers
+      .map(user => {
+        const userTasks = filteredTasks.filter(t => t.assignedTo?.includes(user.id) || false);
+        
+        const horasReales = userTasks.reduce((acc, t) => {
+          if (t.timeEntries) return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
+          return acc + (t.actualHours || 0);
+        }, 0);
+        
+        const horasEstimadas = userTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+        
+        const tareas = {
+          total: userTasks.length,
+          completadas: userTasks.filter(t => t.status === 'completed').length,
+          progreso: userTasks.filter(t => t.status === 'in-progress' || t.status === 'review').length,
+          pendientes: userTasks.filter(t => t.status === 'pending').length,
+          bloqueadas: userTasks.filter(t => t.status === 'blocked').length
+        };
+        
+        const proyectos = new Set(
+          userTasks.map(t => modules.find(m => m.id === t.moduleId)?.projectId).filter(Boolean)
+        ).size;
+        
+        let planningTareas: any[] = [];
+        let planningHoras = 0;
+        
+        if (currentPlanning) {
+          const userModules = currentPlanning.modules.filter(module => 
+            moduleIds.includes(module.moduleId) && module.assignedUsers.includes(user.id)
+          );
+          
+          userModules.forEach(module => {
+            module.tasks.forEach((task: any) => {
+              if (task.assignedUsers.includes(user.id)) {
+                planningTareas.push({
+                  nombre: task.taskName,
+                  modulo: module.moduleName,
+                  horas: task.estimatedHours
+                });
+                planningHoras += task.estimatedHours;
+              }
+            });
+          });
+        }
 
-  const getWorkloadMessage = (level: string) => {
-    switch(level) {
-      case 'baja': return 'Capacidad disponible';
-      case 'media': return 'Ritmo sostenible';
-      case 'alta': return 'Considerar redistribuir';
-      default: return '';
-    }
-  };
+        return {
+          id: user.id,
+          nombre: user.name,
+          rol: user.role,
+          avatar: user.avatar,
+          horas: { reales: horasReales, estimadas: horasEstimadas, eficiencia: horasEstimadas ? Math.round((horasReales / horasEstimadas) * 100) : 0 },
+          tareas,
+          proyectos,
+          planning: {
+            tiene: planningTareas.length > 0,
+            tareas: planningTareas,
+            totalTareas: planningTareas.length,
+            horas: planningHoras
+          }
+        };
+      })
+      .filter(user => user.tareas.total > 0 || user.planning.tiene)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [availableUsers, filteredTasks, currentPlanning, moduleIds]);
 
-  const totalHoursInPeriod = userStats.reduce((acc, u) => acc + u.totalHoursInRange, 0);
-  const daysInPeriod = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-  const dailyAverageTeam = daysInPeriod > 0 ? Math.round((totalHoursInPeriod / daysInPeriod) * 10) / 10 : 0;
+  // ============================================
+  // ESTADÍSTICAS DE MÓDULOS (moduleStats)
+  // ============================================
+  
+  const moduleStats = useMemo(() => {
+    return filteredModules
+      .map(module => {
+        const project = projects.find(p => p.id === module.projectId);
+        const area = module.areaId ? areas.find(a => a.id === module.areaId) : null;
+        
+        const moduleTasks = tasks.filter(t => t.moduleId === module.id);
+        
+        const horasEstimadas = moduleTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+        const horasReales = moduleTasks.reduce((acc, t) => {
+          if (t.timeEntries) return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
+          return acc + (t.actualHours || 0);
+        }, 0);
+        
+        const tareas = {
+          total: moduleTasks.length,
+          completadas: moduleTasks.filter(t => t.status === 'completed').length,
+          progreso: moduleTasks.filter(t => t.status === 'in-progress' || t.status === 'review').length,
+          pendientes: moduleTasks.filter(t => t.status === 'pending').length,
+          bloqueadas: moduleTasks.filter(t => t.status === 'blocked').length
+        };
+        
+        const usuarios = new Set<string>();
+        moduleTasks.forEach(task => {
+          task.assignedTo?.forEach(userId => usuarios.add(userId));
+        });
+        
+        const avance = tareas.total > 0 ? Math.round((tareas.completadas / tareas.total) * 100) : 0;
+        
+        const enPlanning = currentPlanning?.modules.some(m => m.moduleId === module.id) || false;
+
+        return {
+          id: module.id,
+          nombre: module.name,
+          proyecto: project?.name || 'Sin proyecto',
+          area: area?.name,
+          areaColor: area?.color,
+          horas: { estimadas: horasEstimadas, reales: horasReales },
+          tareas,
+          usuarios: Array.from(usuarios),
+          totalUsuarios: usuarios.size,
+          avance,
+          enPlanning
+        };
+      })
+      .sort((a, b) => b.avance - a.avance);
+  }, [filteredModules, currentPlanning]);
+
+  // ============================================
+  // CRUCE DE HORAS TRABAJADAS VS PLANNING
+  // ============================================
+  
+  const timeTrackingStats = useMemo(() => {
+    // Determinar rango de fechas
+    const now = new Date();
+    let startDate = new Date();
+    
+    if (selectedDateRange === 'week') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (selectedDateRange === 'month') {
+      startDate.setMonth(now.getMonth() - 1);
+    } else {
+      startDate = new Date(0); // Todo el histórico
+    }
+
+    // Por usuario
+    const userTimeStats = availableUsers.map(user => {
+      // Horas registradas en timeEntries
+      const userTasks = tasks.filter(t => t.assignedTo?.includes(user.id) || false);
+      
+      let horasRegistradas = 0;
+      let horasPorDia: Record<string, number> = {};
+      
+      userTasks.forEach(task => {
+        if (task.timeEntries) {
+          task.timeEntries.forEach(entry => {
+            const entryDate = new Date(entry.date);
+            if (entryDate >= startDate) {
+              horasRegistradas += entry.hours;
+              const dateKey = entryDate.toISOString().split('T')[0];
+              horasPorDia[dateKey] = (horasPorDia[dateKey] || 0) + entry.hours;
+            }
+          });
+        }
+      });
+      
+      // Horas planificadas en planning
+      let horasPlanificadas = 0;
+      let tareasPlanificadas: string[] = [];
+      
+      if (currentPlanning) {
+        currentPlanning.modules.forEach(module => {
+          if (moduleIds.includes(module.moduleId)) {
+            module.tasks.forEach((task: any) => {
+              if (task.assignedUsers.includes(user.id)) {
+                horasPlanificadas += task.estimatedHours;
+                tareasPlanificadas.push(task.taskName);
+              }
+            });
+          }
+        });
+      }
+      
+      // Días trabajados (días con horas > 0)
+      const diasTrabajados = Object.keys(horasPorDia).length;
+      
+      // Promedio diario
+      const promedioDiario = diasTrabajados > 0 
+        ? Math.round((horasRegistradas / diasTrabajados) * 10) / 10 
+        : 0;
+      
+      // Desviación vs planning
+      const desviacion = horasPlanificadas > 0 
+        ? Math.round(((horasRegistradas - horasPlanificadas) / horasPlanificadas) * 100) 
+        : 0;
+
+      return {
+        userId: user.id,
+        nombre: user.name,
+        avatar: user.avatar,
+        horas: {
+          registradas: horasRegistradas,
+          planificadas: horasPlanificadas,
+          desviacion,
+          promedioDiario,
+          diasTrabajados
+        },
+        tareas: {
+          planificadas: tareasPlanificadas.length,
+          lista: tareasPlanificadas.slice(0, 5)
+        },
+        horasPorDia
+      };
+    }).filter(stat => stat.horas.registradas > 0 || stat.horas.planificadas > 0);
+
+    // Totales generales
+    const totalHorasRegistradas = userTimeStats.reduce((acc, u) => acc + u.horas.registradas, 0);
+    const totalHorasPlanificadas = userTimeStats.reduce((acc, u) => acc + u.horas.planificadas, 0);
+    const totalDiasTrabajados = userTimeStats.reduce((acc, u) => acc + u.horas.diasTrabajados, 0);
+    const promedioEquipo = userTimeStats.length > 0 
+      ? Math.round((totalHorasRegistradas / userTimeStats.length) * 10) / 10 
+      : 0;
+
+    return {
+      usuarios: userTimeStats,
+      totales: {
+        registradas: totalHorasRegistradas,
+        planificadas: totalHorasPlanificadas,
+        desviacion: totalHorasPlanificadas > 0 
+          ? Math.round(((totalHorasRegistradas - totalHorasPlanificadas) / totalHorasPlanificadas) * 100) 
+          : 0,
+        usuariosActivos: userTimeStats.length,
+        promedioEquipo,
+        diasTrabajados: totalDiasTrabajados
+      }
+    };
+  }, [availableUsers, currentPlanning, moduleIds, selectedDateRange]);
+
+  // ============================================
+  // KPI GENERALES
+  // ============================================
+  
+  const kpis = useMemo(() => {
+    const filteredTasksForKPI = selectedUserId === 'all' ? tasksByModule : filteredTasks;
+    
+    const totalTasks = filteredTasksForKPI.length;
+    const completedTasks = filteredTasksForKPI.filter(t => t.status === 'completed').length;
+    const inProgressTasks = filteredTasksForKPI.filter(t => t.status === 'in-progress' || t.status === 'review').length;
+    const pendingTasks = filteredTasksForKPI.filter(t => t.status === 'pending').length;
+    const blockedTasks = filteredTasksForKPI.filter(t => t.status === 'blocked').length;
+    
+    const totalEstimatedHours = filteredTasksForKPI.reduce((acc, t) => acc + t.estimatedHours, 0);
+    const totalActualHours = filteredTasksForKPI.reduce((acc, t) => {
+      if (t.timeEntries) return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
+      return acc + (t.actualHours || 0);
+    }, 0);
+    
+    const modulesInFilter = new Set(filteredTasksForKPI.map(t => t.moduleId)).size;
+    
+    // Planning stats
+    let planningTasks = 0;
+    let planningHours = 0;
+    let planningParticipants = 0;
+    
+    if (currentPlanning) {
+      const participantsSet = new Set();
+      
+      currentPlanning.modules.forEach(module => {
+        if (moduleIds.includes(module.moduleId)) {
+          module.tasks.forEach((task: any) => {
+            if (selectedUserId === 'all' || task.assignedUsers.includes(selectedUserId)) {
+              planningTasks++;
+              planningHours += task.estimatedHours;
+              task.assignedUsers.forEach((userId: string) => participantsSet.add(userId));
+            }
+          });
+        }
+      });
+      
+      planningParticipants = participantsSet.size;
+    }
+
+    return {
+      tareas: { total: totalTasks, completed: completedTasks, inProgress: inProgressTasks, pending: pendingTasks, blocked: blockedTasks },
+      horas: { estimadas: totalEstimatedHours, reales: totalActualHours, desviacion: totalEstimatedHours ? Math.round((totalActualHours / totalEstimatedHours) * 100) : 0 },
+      modulos: { total: filteredModules.length, conTareas: modulesInFilter },
+      planning: { tareas: planningTasks, horas: planningHours, participantes: planningParticipants },
+      timeTracking: timeTrackingStats.totales
+    };
+  }, [filteredTasks, tasksByModule, filteredModules, moduleIds, currentPlanning, selectedUserId, timeTrackingStats]);
 
   return (
-    
     <div className="space-y-6">
+      {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Dashboard de Tareas por Usuario</h2>
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
-        </Button>
+        <h2 className="text-2xl font-bold">Dashboard de Seguimiento</h2>
+        <div className="flex items-center gap-2">
+          <Select value={selectedDateRange} onValueChange={(v: any) => setSelectedDateRange(v)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Última semana</SelectItem>
+              <SelectItem value="month">Último mes</SelectItem>
+              <SelectItem value="all">Todo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant={showPlanner ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setShowPlanner(!showPlanner)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {showPlanner ? "Ver dashboard" : "Planificar"}
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs principales */}
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="dashboard">Dashboard general</TabsTrigger>
-          <TabsTrigger value="planning">Planning semanal</TabsTrigger>
-          {selectedUserId !== 'all' && (
-            <TabsTrigger value="my-commitments">Mis compromisos</TabsTrigger>
-          )}
-        </TabsList>
-
-        {/* TAB: DASHBOARD GENERAL */}
-        <TabsContent value="dashboard" className="space-y-6">
-          {/* FILTROS */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filtros
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-6 gap-4">
-                {/* Filtro por Usuario */}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Usuario</label>
-                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los usuarios" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los usuarios</SelectItem>
-                      {users.map(user => (
-                        <SelectItem key={user.id} value={user.id}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                            </Avatar>
-                            <span>{user.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Filtro por Proyecto */}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Proyecto</label>
-                  <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los proyectos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los proyectos</SelectItem>
-                      {projects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Filtro por Área */}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Área</label>
-                  <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas las áreas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las áreas</SelectItem>
-                      {areas.map(area => (
-                        <SelectItem key={area.id} value={area.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: area.color }} />
-                            <span>{area.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Filtro por Módulo */}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Módulo</label>
-                  <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los módulos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los módulos</SelectItem>
-                      {filteredModulesByArea.map(module => (
-                        <SelectItem key={module.id} value={module.id}>
-                          {module.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Filtro por fechas */}
-                <div className="col-span-2">
-                  <label className="text-xs text-muted-foreground mb-1 block">Período</label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={viewType === 'week' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        setViewType('week');
-                        const to = new Date();
-                        const from = new Date();
-                        from.setDate(to.getDate() - 7);
-                        setDateRange({ from, to });
-                      }}
-                    >
-                      Última semana
-                    </Button>
-                    <Button
-                      variant={viewType === 'month' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        setViewType('month');
-                        const to = new Date();
-                        const from = new Date();
-                        from.setMonth(to.getMonth() - 1);
-                        setDateRange({ from, to });
-                      }}
-                    >
-                      Último mes
-                    </Button>
-                    <Button
-                      variant={viewType === 'custom' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setViewType('custom')}
-                    >
-                      Personalizar
-                    </Button>
-                  </div>
-                  
-                  {viewType === 'custom' && (
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        type="date"
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                        value={dateRange.from.toISOString().split('T')[0]}
-                        onChange={(e) => setDateRange({ ...dateRange, from: new Date(e.target.value) })}
-                      />
-                      <span className="text-sm py-2">→</span>
-                      <input
-                        type="date"
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                        value={dateRange.to.toISOString().split('T')[0]}
-                        onChange={(e) => setDateRange({ ...dateRange, to: new Date(e.target.value) })}
-                      />
-                    </div>
-                  )}
-                </div>
+      {/* FILTROS */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Proyecto</label>
+              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los proyectos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los proyectos</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Área</label>
+              <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas las áreas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las áreas</SelectItem>
+                  {areas.map(a => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                        <span>{a.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Módulo</label>
+              <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los módulos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los módulos</SelectItem>
+                  {modulesByArea.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Usuario</label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los usuarios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={u.avatar} />
+                          <AvatarFallback>{getInitials(u.name)}</AvatarFallback>
+                        </Avatar>
+                        <span>{u.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Planning</label>
+              <div className="flex gap-2">
+                <Select value={selectedPlanningId} onValueChange={setSelectedPlanningId} className="flex-1">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar planning" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="current">Planning actual</SelectItem>
+                    {allPlannings.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} - {p.projectName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="icon" variant="outline" onClick={() => setShowCreatePlanning(true)}>
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* RESUMEN DE HORAS EN EL PERÍODO */}
-          <div className="grid grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground">Total horas en período</div>
-                <div className="text-2xl font-bold">{totalHoursInPeriod}h</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {userStats.filter(u => u.totalHoursInRange > 0).length} usuarios activos
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground">Promedio diario equipo</div>
-                <div className="text-2xl font-bold">{dailyAverageTeam}h</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  en {daysInPeriod} días
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground">Usuario con más horas</div>
-                {userStats.length > 0 && userStats[0]?.totalHoursInRange > 0 && (
-                  <>
-                    <div className="text-lg font-bold">{userStats[0]?.user.name}</div>
-                    <div className="text-sm">{userStats[0]?.totalHoursInRange}h</div>
-                  </>
-                )}
-                {(!userStats.length || userStats[0]?.totalHoursInRange === 0) && (
-                  <div className="text-sm text-muted-foreground">Sin datos en período</div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground">Tareas en período</div>
-                <div className="text-2xl font-bold">{enrichedTasks.length}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {completedFilteredTasks} completadas
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* VISTA DE CARGA LABORAL DEL EQUIPO */}
-          <Card className="border-2 border-primary/10">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-primary" />
-                  Carga laboral del equipo {viewType === 'week' ? '(última semana)' : viewType === 'month' ? '(último mes)' : '(período seleccionado)'}
-                </CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Ordenar por:</span>
-                  <Select value={sortMetric} onValueChange={(value: any) => setSortMetric(value)}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Métrica" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hours">Horas en período</SelectItem>
-                      <SelectItem value="completion">% de avance</SelectItem>
-                      <SelectItem value="tasks">Cantidad de tareas</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Horas registradas</p>
+                <p className="text-2xl font-bold">{kpis.timeTracking.registradas}h</p>
               </div>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {userStats.map((stat) => (
-                  <Card key={stat.user.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      {/* Header con usuario */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-12 w-12 border-2 border-primary/10">
-                            <AvatarImage src={stat.user.avatar} />
-                            <AvatarFallback>{getInitials(stat.user.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{stat.user.name}</h3>
-                              {stat.inProgressTasks > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                  </span>
-                                  <span className="text-xs text-green-600 font-medium">
-                                    {stat.inProgressTasks} activa{stat.inProgressTasks !== 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">{stat.user.role}</p>
-                          </div>
-                        </div>
-                        
-                        {stat.hasActivityInRange && (
-                          <div className="text-right">
-                            <div className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getWorkloadColor(stat.workloadLevel)}`}>
-                              Carga {stat.workloadLevel}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {getWorkloadMessage(stat.workloadLevel)}
-                            </p>
-                          </div>
-                        )}
+              <Clock className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {kpis.timeTracking.usuariosActivos} usuarios activos
+            </p>
+          </CardContent>
+        </Card>
 
-                        {!stat.hasActivityInRange && (
-                          <Badge variant="outline" className="ml-auto">
-                            Sin actividad en el período
-                          </Badge>
-                        )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Horas planificadas</p>
+                <p className="text-2xl font-bold">{kpis.timeTracking.planificadas}h</p>
+              </div>
+              <Target className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Planning: {kpis.planning.tareas} tareas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Desviación</p>
+                <p className={`text-2xl font-bold ${kpis.timeTracking.desviacion <= 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {kpis.timeTracking.desviacion > 0 ? '+' : ''}{kpis.timeTracking.desviacion}%
+                </p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              vs planificado
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Promedio diario</p>
+                <p className="text-2xl font-bold">{kpis.timeTracking.promedioEquipo}h</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              por usuario
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Días trabajados</p>
+                <p className="text-2xl font-bold">{kpis.timeTracking.diasTrabajados}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              en total
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* MODO PLANIFICADOR VS DASHBOARD */}
+      {showPlanner ? (
+        <PlanningSimpleView />
+      ) : (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="usuarios">
+              <Users className="h-4 w-4 mr-2" />
+              Usuarios ({userStats.length})
+            </TabsTrigger>
+            <TabsTrigger value="modulos">
+              <FolderTree className="h-4 w-4 mr-2" />
+              Módulos ({moduleStats.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* TAB 1: USUARIOS */}
+          <TabsContent value="usuarios" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {userStats.map(user => {
+                const timeData = timeTrackingStats.usuarios.find(u => u.userId === user.id);
+                
+                return (
+                  <Card key={user.id} className="hover:shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3 mb-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={user.avatar} />
+                          <AvatarFallback>{getInitials(user.nombre)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{user.nombre}</h3>
+                            {user.tareas.progreso > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {user.tareas.progreso} activas
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{user.rol}</p>
+                        </div>
                       </div>
 
-                      {/* Métricas principales */}
-                      {stat.hasActivityInRange ? (
-                        <>
-                          <div className="grid grid-cols-5 gap-2 mb-4">
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                              <div className="text-sm font-bold">{stat.totalHoursInRange}h</div>
-                              <div className="text-xs text-muted-foreground">en período</div>
-                            </div>
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                              <div className="text-sm font-bold">{stat.completedTasks}</div>
-                              <div className="text-xs text-muted-foreground">completadas</div>
-                            </div>
-                            <div className="text-center p-2 bg-green-50 rounded border border-green-200">
-                              <Activity className="h-4 w-4 mx-auto mb-1 text-green-600" />
-                              <div className="text-sm font-bold text-green-700">{stat.inProgressTasks}</div>
-                              <div className="text-xs text-green-600 font-medium">activas</div>
-                            </div>
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <Layers className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                              <div className="text-sm font-bold">{stat.projectsCount}</div>
-                              <div className="text-xs text-muted-foreground">proyectos</div>
-                            </div>
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <Calendar className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                              <div className="text-sm font-bold">{stat.dailyAverage}h</div>
-                              <div className="text-xs text-muted-foreground">/día</div>
-                            </div>
+                      {/* Métricas de horas trabajadas */}
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
+                          <Clock className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                          <div className="text-sm font-bold text-blue-700">{timeData?.horas.registradas || 0}h</div>
+                          <div className="text-xs text-blue-600">trabajadas</div>
+                        </div>
+                        <div className="text-center p-2 bg-muted/30 rounded">
+                          <Target className="h-4 w-4 mx-auto mb-1" />
+                          <div className="text-sm font-bold">{user.horas.estimadas}h</div>
+                          <div className="text-xs text-muted-foreground">asignadas</div>
+                        </div>
+                        <div className="text-center p-2 bg-muted/30 rounded">
+                          <CheckCircle2 className="h-4 w-4 mx-auto mb-1" />
+                          <div className="text-sm font-bold">{user.tareas.completadas}</div>
+                          <div className="text-xs text-muted-foreground">completadas</div>
+                        </div>
+                        <div className="text-center p-2 bg-muted/30 rounded">
+                          <Calendar className="h-4 w-4 mx-auto mb-1" />
+                          <div className="text-sm font-bold">{timeData?.horas.diasTrabajados || 0}</div>
+                          <div className="text-xs text-muted-foreground">días</div>
+                        </div>
+                      </div>
+
+                      {/* Comparativa vs planning */}
+                      {timeData && timeData.horas.planificadas > 0 && (
+                        <div className="mb-3 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-purple-700">Vs planning:</span>
+                            <span className={timeData.horas.desviacion <= 0 ? 'text-green-600' : 'text-amber-600'}>
+                              {timeData.horas.registradas}/{timeData.horas.planificadas}h ({timeData.horas.desviacion > 0 ? '+' : ''}{timeData.horas.desviacion}%)
+                            </span>
                           </div>
-
-                          {/* Mini timeline */}
-                          {Object.keys(stat.hoursByDate).length > 0 && (
-                            <div className="mt-3">
-                              <div className="text-xs font-medium mb-1">Distribución en el período</div>
-                              <div className="flex gap-1 h-8 items-end">
-                                {Object.entries(stat.hoursByDate)
-                                  .sort(([a], [b]) => a.localeCompare(b))
-                                  .slice(-7)
-                                  .map(([date, hours]) => {
-                                    const maxHours = Math.max(...Object.values(stat.hoursByDate));
-                                    const height = Math.max((hours / maxHours) * 32, 4);
-                                    
-                                    return (
-                                      <TooltipProvider key={date}>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <div className="flex-1 flex flex-col items-center">
-                                              <div 
-                                                className="w-full bg-blue-500 rounded-t"
-                                                style={{ height: `${height}px` }}
-                                              />
-                                              <div className="text-[8px] text-muted-foreground mt-1">
-                                                {new Date(date).getDate()}
-                                              </div>
-                                            </div>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>{new Date(date).toLocaleDateString()}: {hours}h</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Planning semanal */}
-                          {stat.weeklyPlanning && stat.weeklyPlanning.totalPlannedHours > 0 && (
-                            <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-100">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-medium">Planning esta semana</span>
-                                <Badge variant={stat.weeklyPlanning.onTrack ? 'default' : 'secondary'} className="text-[10px]">
-                                  {stat.weeklyPlanning.deviation}% avance
-                                </Badge>
-                              </div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span className="text-muted-foreground">Horas</span>
-                                <span>{stat.weeklyPlanning.totalActualHours}/{stat.weeklyPlanning.totalPlannedHours}h</span>
-                              </div>
-                              <Progress value={stat.weeklyPlanning.deviation} className="h-1.5" />
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {stat.weeklyPlanning.commitments.slice(0, 2).map(c => {
-                                  const task = tasks.find(t => t.id === c.taskId);
-                                  return task ? (
-                                    <Badge key={c.id} variant="outline" className="text-[8px]">
-                                      {c.status === 'in-progress' && '▶️ '}
-                                      {c.status === 'paused' && '⏸️ '}
-                                      {task.name.substring(0, 15)}...
-                                    </Badge>
-                                  ) : null;
-                                })}
-                                {stat.weeklyPlanning.commitments.length > 2 && (
-                                  <Badge variant="outline" className="text-[8px]">
-                                    +{stat.weeklyPlanning.commitments.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Barras de progreso */}
-                          <div className="space-y-3 mt-4">
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span className="text-muted-foreground">Avance general</span>
-                                <span className="font-medium">{stat.completionRate}%</span>
-                              </div>
-                              <Progress value={stat.completionRate} className="h-2" />
-                            </div>
-                            
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span className="text-muted-foreground">Tiempo invertido (total)</span>
-                                <span className="font-medium">
-                                  {stat.totalHoursAllTime} / {stat.estimatedHours}h
-                                </span>
-                              </div>
-                              <Progress 
-                                value={stat.timeProgress} 
-                                className={`h-2 ${
-                                  stat.timeProgress > 100 ? 'bg-purple-100' : 'bg-blue-100'
-                                }`}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Tags */}
-                          <div className="flex flex-wrap gap-1 mt-4">
-                            {stat.topArea && (
-                              <Badge 
-                                variant="outline"
-                                className="text-xs"
-                                style={{ 
-                                  borderLeftColor: stat.topArea.color, 
-                                  borderLeftWidth: '3px' 
-                                }}
-                              >
-                                {stat.topArea.name}
-                              </Badge>
-                            )}
-                            {stat.pendingTasks > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {stat.pendingTasks} pendientes
-                              </Badge>
-                            )}
-                            {stat.blockedTasks > 0 && (
-                              <Badge variant="destructive" className="text-xs">
-                                {stat.blockedTasks} bloqueadas
-                              </Badge>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-6 text-muted-foreground bg-muted/20 rounded-lg">
-                          Sin actividad en el período seleccionado
+                          <Progress 
+                            value={(timeData.horas.registradas / timeData.horas.planificadas) * 100} 
+                            className="h-1.5 bg-purple-100"
+                          />
+                          <p className="text-xs text-purple-600 mt-1">
+                            Promedio: {timeData.horas.promedioDiario}h/día
+                          </p>
                         </div>
                       )}
+
+                      {/* Planning de la semana */}
+                      {user.planning.tiene && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-700">Planning</span>
+                            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 ml-auto">
+                              {user.planning.totalTareas} tareas
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            {user.planning.tareas.slice(0, 3).map((t, i) => (
+                              <div key={i} className="text-xs flex justify-between">
+                                <span>{t.nombre}</span>
+                                <span className="font-medium">{t.horas}h</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {user.tareas.pendientes > 0 && (
+                          <Badge variant="outline">{user.tareas.pendientes} pendientes</Badge>
+                        )}
+                        {user.tareas.bloqueadas > 0 && (
+                          <Badge variant="destructive">{user.tareas.bloqueadas} bloqueadas</Badge>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </TabsContent>
 
-              {userStats.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No hay usuarios con tareas asignadas en este período
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* LISTA DE TAREAS */}
-          {viewMode === 'cards' ? (
+          {/* TAB 2: MÓDULOS */}
+          <TabsContent value="modulos" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {enrichedTasks.map(task => (
-                <Card key={task.id} className="hover:shadow-md transition-shadow">
+              {moduleStats.map(module => (
+                <Card key={module.id} className={`hover:shadow-md ${module.enPlanning ? 'border-blue-200 bg-blue-50/20' : ''}`}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="font-medium">{task.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <FolderTree className="h-4 w-4 text-blue-500" />
+                          <h3 className="font-semibold">{module.nombre}</h3>
+                          {module.enPlanning && (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 text-[10px]">
+                              En planning
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-[10px]">
-                            {task.project?.name}
+                            {module.proyecto}
                           </Badge>
-                          {task.area && (
+                          {module.area && (
                             <Badge 
                               variant="outline" 
                               className="text-[10px]"
-                              style={{ 
-                                borderLeftColor: task.area.color, 
-                                borderLeftWidth: '3px' 
-                              }}
+                              style={{ borderLeftColor: module.areaColor, borderLeftWidth: '3px' }}
                             >
-                              {task.area.name}
+                              {module.area}
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <Badge variant={
-                        task.status === 'completed' ? 'default' :
-                        task.status === 'in-progress' ? 'secondary' :
-                        task.status === 'blocked' ? 'destructive' :
-                        task.status === 'review' ? 'outline' : 'secondary'
-                      }>
-                        {task.status === 'completed' ? 'Completada' :
-                         task.status === 'in-progress' ? 'En progreso' :
-                         task.status === 'review' ? 'Revisión' :
-                         task.status === 'blocked' ? 'Bloqueada' : 'Pendiente'}
+                      <Badge variant={module.avance >= 100 ? 'default' : 'outline'}>
+                        {module.avance}%
                       </Badge>
                     </div>
 
-                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                      {task.description}
-                    </p>
-
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex items-center gap-1 text-xs">
-                        <Clock className="h-3 w-3" />
-                        <span className={task.totalActualHours > task.estimatedHours ? 'text-purple-600' : ''}>
-                          {task.totalActualHours}/{task.estimatedHours}h
-                        </span>
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Progreso</span>
+                        <span>{module.tareas.completadas}/{module.tareas.total} tareas</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs">
-                        <User className="h-3 w-3" />
+                      <Progress value={module.avance} className="h-2" />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="text-center p-2 bg-muted/30 rounded">
+                        <Clock className="h-4 w-4 mx-auto mb-1" />
+                        <div className="text-sm font-bold">{module.horas.reales}h</div>
+                        <div className="text-xs text-muted-foreground">reales</div>
+                      </div>
+                      <div className="text-center p-2 bg-muted/30 rounded">
+                        <Target className="h-4 w-4 mx-auto mb-1" />
+                        <div className="text-sm font-bold">{module.horas.estimadas}h</div>
+                        <div className="text-xs text-muted-foreground">estimadas</div>
+                      </div>
+                      <div className="text-center p-2 bg-muted/30 rounded">
+                        <Users className="h-4 w-4 mx-auto mb-1" />
+                        <div className="text-sm font-bold">{module.totalUsuarios}</div>
+                        <div className="text-xs text-muted-foreground">usuarios</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {module.tareas.completadas > 0 && (
+                        <Badge variant="default" className="bg-green-500 text-[10px]">
+                          ✓ {module.tareas.completadas} completadas
+                        </Badge>
+                      )}
+                      {module.tareas.progreso > 0 && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          ● {module.tareas.progreso} en progreso
+                        </Badge>
+                      )}
+                      {module.tareas.pendientes > 0 && (
+                        <Badge variant="outline" className="text-[10px]">
+                          ○ {module.tareas.pendientes} pendientes
+                        </Badge>
+                      )}
+                      {module.tareas.bloqueadas > 0 && (
+                        <Badge variant="destructive" className="text-[10px]">
+                          ! {module.tareas.bloqueadas} bloqueadas
+                        </Badge>
+                      )}
+                    </div>
+
+                    {module.usuarios.length > 0 && (
+                      <div className="flex items-center gap-1 mt-3">
+                        <span className="text-xs text-muted-foreground">Asignados:</span>
                         <div className="flex -space-x-2">
-                          {task.assignedUsers.slice(0, 3).map(user => (
-                            <Avatar key={user.id} className="h-5 w-5 border border-background">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback className="text-[8px]">{getInitials(user.name)}</AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {task.assignedUsers.length > 3 && (
-                            <Badge variant="outline" className="h-5 px-1 text-[8px]">
-                              +{task.assignedUsers.length - 3}
+                          {module.usuarios.slice(0, 5).map(userId => {
+                            const user = users.find(u => u.id === userId);
+                            return user ? (
+                              <TooltipProvider key={userId}>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Avatar className="h-6 w-6 border border-background">
+                                      <AvatarImage src={user.avatar} />
+                                      <AvatarFallback className="text-[8px]">{getInitials(user.name)}</AvatarFallback>
+                                    </Avatar>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{user.name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : null;
+                          })}
+                          {module.usuarios.length > 5 && (
+                            <Badge variant="outline" className="h-6 px-1 text-[8px]">
+                              +{module.usuarios.length - 5}
                             </Badge>
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px]">
-                        <span>Progreso</span>
-                        <span>{task.progress}%</span>
-                      </div>
-                      <Progress 
-                        value={task.progress} 
-                        className={`h-1 ${
-                          task.progress >= 100 ? 'bg-green-100' : 
-                          task.status === 'blocked' ? 'bg-red-100' : ''
-                        }`} 
-                      />
-                    </div>
-
-                    <div className="mt-2 text-[10px] text-muted-foreground">
-                      📦 {task.module?.name}
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
-
-              {enrichedTasks.length === 0 && (
-                <div className="col-span-2 text-center py-12 text-muted-foreground">
-                  No hay tareas que coincidan con los filtros seleccionados
-                </div>
-              )}
             </div>
-          ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tarea</TableHead>
-                      <TableHead>Proyecto</TableHead>
-                      <TableHead>Módulo</TableHead>
-                      <TableHead>Área</TableHead>
-                      <TableHead>Asignados</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Horas</TableHead>
-                      <TableHead>Progreso</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {enrichedTasks.map(task => (
-                      <TableRow key={task.id}>
-                        <TableCell className="font-medium">{task.name}</TableCell>
-                        <TableCell>{task.project?.name}</TableCell>
-                        <TableCell>{task.module?.name}</TableCell>
-                        <TableCell>
-                          {task.area && (
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: task.area.color }} />
-                              <span>{task.area.name}</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex -space-x-2">
-                            {task.assignedUsers.slice(0, 3).map(user => (
-                              <Avatar key={user.id} className="h-6 w-6 border border-background">
-                                <AvatarImage src={user.avatar} />
-                                <AvatarFallback className="text-[8px]">{getInitials(user.name)}</AvatarFallback>
-                              </Avatar>
-                            ))}
-                            {task.assignedUsers.length > 3 && (
-                              <Badge variant="outline" className="h-6 px-1 text-[8px]">
-                                +{task.assignedUsers.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            task.status === 'completed' ? 'default' :
-                            task.status === 'in-progress' ? 'secondary' :
-                            task.status === 'blocked' ? 'destructive' :
-                            task.status === 'review' ? 'outline' : 'secondary'
-                          }>
-                            {task.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className={task.totalActualHours > task.estimatedHours ? 'text-purple-600' : ''}>
-                            {task.totalActualHours}/{task.estimatedHours}h
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={task.progress} className="w-16 h-1" />
-                            <span className="text-xs">{task.progress}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* TAB: PLANNING SEMANAL */}
-        <TabsContent value="planning">
-           <PlanningSimpleView />
-        </TabsContent>
-
-        {/* TAB: MIS COMPROMISOS (solo si hay usuario seleccionado) */}
-        {selectedUserId !== 'all' && (
-          <TabsContent value="my-commitments">
-            <UserCommitmentsView userId={selectedUserId} />
           </TabsContent>
-        )}
-      </Tabs>
+        </Tabs>
+      )}
+
+      {/* DIALOG CREAR PLANNING */}
+      <Dialog open={showCreatePlanning} onOpenChange={setShowCreatePlanning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crear nuevo planning</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Proyecto</label>
+              <Select value={newPlanningProject} onValueChange={setNewPlanningProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar proyecto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Semanas</label>
+              <div className="border rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+                {AVAILABLE_WEEKS.map(week => (
+                  <div key={week.value} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={week.value}
+                      className="rounded border-gray-300"
+                      checked={newPlanningWeeks.includes(week.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewPlanningWeeks([...newPlanningWeeks, week.value]);
+                        } else {
+                          setNewPlanningWeeks(newPlanningWeeks.filter(w => w !== week.value));
+                        }
+                      }}
+                    />
+                    <label htmlFor={week.value} className="text-sm cursor-pointer flex-1">
+                      {week.fullLabel}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Descripción (opcional)</label>
+              <Textarea
+                placeholder="Ej: Sprint 12 - Módulo de usuarios"
+                value={newPlanningDescription}
+                onChange={(e) => setNewPlanningDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowCreatePlanning(false);
+              setNewPlanningProject('');
+              setNewPlanningWeeks([]);
+              setNewPlanningDescription('');
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCreatePlanning}
+              disabled={!newPlanningProject || newPlanningWeeks.length === 0}
+            >
+              Crear planning
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
