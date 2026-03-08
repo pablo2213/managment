@@ -11,9 +11,9 @@ import { users, tasks, TimeEntry } from '@/lib/data';
 interface TimeEntryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  task: any; // Tipo Task
+  task: any;
   userId: string;
-  onSave: (updatedTask: any) => void; // Ahora devuelve la tarea actualizada
+  onSave: (updatedTask: any) => void;
 }
 
 export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: TimeEntryModalProps) {
@@ -29,9 +29,6 @@ export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: Tim
   const handleSubmit = () => {
     if (hours <= 0) return;
 
-    // ============================================
-    // 1. CREAR NUEVO TIME ENTRY
-    // ============================================
     const newEntry: TimeEntry = {
       id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       taskId: task.id,
@@ -42,9 +39,6 @@ export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: Tim
       description: description || undefined,
     };
 
-    // ============================================
-    // 2. ACTUALIZAR LA TAREA EN MEMORIA
-    // ============================================
     const currentTimeEntries = task.timeEntries || [];
     const updatedTimeEntries = [...currentTimeEntries, newEntry];
     
@@ -56,24 +50,12 @@ export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: Tim
       actualHours: totalActualHours,
     };
 
-    // ============================================
-    // 3. ACTUALIZAR EN EL ARRAY GLOBAL tasks
-    // ============================================
-    // Esto es temporal mientras usamos datos mock
-    // En producción, esto sería una llamada a API
     const taskIndex = tasks.findIndex(t => t.id === task.id);
     if (taskIndex !== -1) {
       tasks[taskIndex] = updatedTask;
     }
 
-    // ============================================
-    // 4. NOTIFICAR AL COMPONENTE PADRE
-    // ============================================
     onSave(updatedTask);
-
-    // ============================================
-    // 5. LIMPIAR Y CERRAR
-    // ============================================
     setHours(0);
     setDescription('');
     onOpenChange(false);
@@ -95,7 +77,7 @@ export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: Tim
             <p className="text-sm font-medium">{task.name}</p>
           </div>
 
-          {/* Resumen */}
+          {/* Resumen de horas */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-muted/30 p-2 rounded text-center">
               <div className="text-xs text-muted-foreground">Registradas</div>
@@ -156,6 +138,29 @@ export function TimeEntryModal({ open, onOpenChange, task, userId, onSave }: Tim
               />
             </div>
           </div>
+
+          {/* Resumen de registros anteriores */}
+          {task.timeEntries && task.timeEntries.length > 0 && (
+            <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Registros anteriores ({task.timeEntries.length})
+              </p>
+              <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                {task.timeEntries.slice(-3).map(entry => (
+                  <div key={entry.id} className="flex justify-between text-muted-foreground">
+                    <span>{entry.date}</span>
+                    <span className="font-medium">{entry.hours}h</span>
+                  </div>
+                ))}
+                {task.timeEntries.length > 3 && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    +{task.timeEntries.length - 3} registros más
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

@@ -639,22 +639,60 @@ export function predictCompletion(projectId: string, allTasks: Task[], project: 
 // ============================================
 
 // Obtener horas estimadas de un módulo (suma de sus tareas)
-export function getModuleEstimatedHours(moduleId: string, tasks: Task[]): number {
-  return tasks
-    .filter(t => t.moduleId === moduleId)
-    .reduce((acc, t) => acc + t.estimatedHours, 0);
+// ============================================
+// FUNCIONES PARA CÁLCULO DE HORAS DE MÓDULOS
+// ============================================
+
+/**
+ * Obtiene las horas estimadas de un módulo (suma de tareas)
+ */
+export function getModuleEstimatedHours(moduleId: string): number {
+  const moduleTasks = tasks.filter(t => t.moduleId === moduleId);
+  return moduleTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
 }
 
-// Obtener horas reales de un módulo (suma de time entries de sus tareas)
-export function getModuleActualHours(moduleId: string, tasks: Task[]): number {
-  return tasks
-    .filter(t => t.moduleId === moduleId)
-    .reduce((acc, t) => {
-      if (t.timeEntries && t.timeEntries.length > 0) {
-        return acc + t.timeEntries.reduce((sum, e) => sum + e.hours, 0);
-      }
-      return acc + (t.actualHours || 0);
-    }, 0);
+/**
+ * Obtiene las horas reales de un módulo (suma de time entries)
+ */
+export function getModuleActualHours(moduleId: string): number {
+  const moduleTasks = tasks.filter(t => t.moduleId === moduleId);
+  let total = 0;
+  moduleTasks.forEach(task => {
+    if (task.timeEntries && task.timeEntries.length > 0) {
+      total += task.timeEntries.reduce((acc, te) => acc + te.hours, 0);
+    } else {
+      total += task.actualHours || 0;
+    }
+  });
+  return total;
+}
+
+/**
+ * Obtiene todas las métricas de un módulo de una vez
+ */
+export function getModuleMetrics(moduleId: string) {
+  const moduleTasks = tasks.filter(t => t.moduleId === moduleId);
+
+  const estimated = moduleTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+  const actual = moduleTasks.reduce((acc, t) => {
+    if (t.timeEntries && t.timeEntries.length > 0) {
+      return acc + t.timeEntries.reduce((s, e) => s + e.hours, 0);
+    }
+    return acc + (t.actualHours || 0);
+  }, 0);
+
+  const completedTasks = moduleTasks.filter(t => t.status === 'completed').length;
+  const totalTasks = moduleTasks.length;
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  return {
+    estimated,
+    actual,
+    completedTasks,
+    totalTasks,
+    progress,
+    efficiency: estimated > 0 ? Math.round((actual / estimated) * 100) : 0
+  };
 }
 
 // Horas de módulos completados (suma de horas estimadas de módulos con estado completed)
@@ -704,4 +742,68 @@ export function getTotalEstimatedHours(tasks: Task[]): number {
 // Horas del proyecto (definidas al crear el proyecto)
 export function getProjectEstimatedHours(project: Project): number {
   return project.estimatedHours || 0;
+}
+// ============================================
+// FUNCIÓN PARA OBTENER DETALLE DE TAREAS DE UN USUARIO EN UN MÓDULO
+// ============================================
+
+export function getUserTaskDetailsInModule(
+  userId: string,
+  moduleId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  const moduleTasks = tasks.filter(t => t.moduleId === moduleId);
+
+  return moduleTasks
+    .filter(task => task.assignedTo?.includes(userId))
+    .map(task => {
+      const actual = task.timeEntries
+        ?.filter(entry =>
+          entry.userId === userId &&
+          new Date(entry.date) >= startDate &&
+          new Date(entry.date) <= endDate
+        )
+        .reduce((sum, entry) => sum + entry.hours, 0) || 0;
+
+      return {
+        taskId: task.id,
+        taskName: task.name,
+        estimated: task.estimatedHours,
+        actual,
+        status: task.status
+      };
+    });
+}
+// Verifica que estas funciones también existan:
+export function getTaskActualHoursInRange(task: Task, startDate: Date, endDate: Date): number {
+  if (!task.timeEntries || task.timeEntries.length === 0) return 0;
+
+  return task.timeEntries
+    .filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= startDate && entryDate <= endDate;
+    })
+    .reduce((acc, entry) => acc + entry.hours, 0);
+}
+
+export function getUserActualHoursInModule(
+  userId: string,
+  moduleId: string,
+  startDate: Date,
+  endDate: Date
+): number {
+  const moduleTasks = tasks.filter(t => t.moduleId === moduleId);
+
+  return moduleTasks.reduce((acc, task) => {
+    if (!task.timeEntries) return acc;
+
+    return acc + task.timeEntries
+      .filter(entry =>
+        entry.userId === userId &&
+        new Date(entry.date) >= startDate &&
+        new Date(entry.date) <= endDate
+      )
+      .reduce((sum, entry) => sum + entry.hours, 0);
+  }, 0);
 }

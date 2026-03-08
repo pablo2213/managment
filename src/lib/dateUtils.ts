@@ -71,3 +71,12 @@ export function isSameWeek(date1: Date, date2: Date): boolean {
   const start2 = getWeekStart(date2);
   return start1.getTime() === start2.getTime();
 }
+
+/**
+ * Obtiene el rango de fechas de una semana en formato legible
+ */
+export function getWeekRange(date: Date): string {
+  const start = getWeekStart(date);
+  const end = getWeekEnd(date);
+  return `${start.getDate()}/${start.getMonth() + 1} - ${end.getDate()}/${end.getMonth() + 1}`;
+}
