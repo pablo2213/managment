@@ -41,35 +41,40 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
     return tasks.filter(t => t.assignedTo?.includes(userId));
   }, [userId, refreshKey]);
 
-  // Obtener planning de la semana
+  // Obtener planning de la semana (cualquier planning que incluya la semana seleccionada)
   const weeklyPlanning = useMemo(() => {
     const allPlannings = planningService.getAllPlannings();
-    return allPlannings.find(p => 
-      p.weeks.includes(selectedWeek.toISOString().split('T')[0])
-    );
+    const weekStr = selectedWeek.toISOString().split('T')[0];
+    
+    // Buscar cualquier planning que tenga esta semana en su array
+    return allPlannings.find(p => p.weeks.includes(weekStr));
   }, [selectedWeek]);
 
   // Mapa de tareas planificadas (para acceso rápido)
   const plannedTaskMap = useMemo(() => {
     const map = new Map();
-    if (weeklyPlanning) {
-      weeklyPlanning.modules.forEach(module => {
+    const allPlannings = planningService.getAllPlannings();
+    
+    allPlannings.forEach(planning => {
+      planning.modules.forEach(module => {
         module.tasks.forEach(task => {
           if (task.assignedUsers.includes(userId)) {
             map.set(task.taskId, {
-              planningName: weeklyPlanning.name,
-              planningId: weeklyPlanning.id,
-              moduleName: module.moduleName
+              planningName: planning.name,
+              planningId: planning.id,
+              moduleName: module.moduleName,
+              weeks: planning.weeks // Guardamos las semanas para referencia
             });
           }
         });
       });
-    }
+    });
+    
     return map;
-  }, [weeklyPlanning, userId]);
+  }, [userId]);
 
   // ============================================
-  // AGRUPAR POR PROYECTO
+  // AGRUPAR POR PROYECTO (CON ORDENAMIENTO MEJORADO)
   // ============================================
   const tasksByProject = useMemo(() => {
     const grouped: Record<string, {
@@ -108,8 +113,30 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
       }
     });
 
+    // Ordenar tareas dentro de cada proyecto
+    const weekStr = selectedWeek.toISOString().split('T')[0];
+    
+    Object.values(grouped).forEach(project => {
+      project.tasks.sort((a, b) => {
+        const aInfo = plannedTaskMap.get(a.id);
+        const bInfo = plannedTaskMap.get(b.id);
+        
+        const aInWeek = aInfo?.weeks?.includes(weekStr) || false;
+        const bInWeek = bInfo?.weeks?.includes(weekStr) || false;
+        
+        // Prioridad 1: Tareas de la semana actual
+        if (aInWeek && !bInWeek) return -1;
+        if (!aInWeek && bInWeek) return 1;
+        
+        // Prioridad 2: Por estado (pendiente primero, luego en progreso, luego completadas)
+        const statusOrder = { 'pending': 1, 'in-progress': 2, 'review': 3, 'completed': 4 };
+        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      });
+    });
+
+    // Ordenar proyectos alfabéticamente
     return Object.values(grouped).sort((a, b) => a.projectName.localeCompare(b.projectName));
-  }, [allUserTasks]);
+  }, [allUserTasks, plannedTaskMap, selectedWeek]);
 
   // ============================================
   // FILTROS
@@ -176,16 +203,20 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
     const hoursLogged = task.timeEntries?.reduce((acc, e) => acc + e.hours, 0) || 0;
     const progress = Math.min(100, Math.round((hoursLogged / task.estimatedHours) * 100));
     
+    // Verificar si la tarea está en la semana seleccionada
+    const weekStr = selectedWeek.toISOString().split('T')[0];
+    const isInCurrentWeek = planningInfo?.weeks?.includes(weekStr) || false;
+    
     // ============================================
-    // DETERMINAR ESTADO DEL PLANNING (VERSIÓN SIMPLE)
+    // DETERMINAR ESTADO DEL PLANNING
     // ============================================
-    let planningStatus = 'none'; // 'current' | 'future' | 'none'
+    let planningStatus = 'none';
     let planningDateText = '';
     let planningColor = '';
     let planningBadge = null;
     let statusText = '';
 
-    if (planningInfo) {
+    if (planningInfo && !isInCurrentWeek) {
       const allPlannings = planningService.getAllPlannings();
       const planning = allPlannings.find(p => p.id === planningInfo.planningId);
       
@@ -194,13 +225,11 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
         const currentWeekStart = getWeekStart(today);
         const currentWeekEnd = getWeekEnd(today);
         
-        // Verificar si la semana actual está dentro del rango del planning
         const isCurrentWeekInPlanning = planning.weeks.some(week => {
           const weekDate = new Date(week);
           return weekDate >= currentWeekStart && weekDate <= currentWeekEnd;
         });
         
-        // Formatear fechas para mostrar
         const formatWeekRange = (weeks: string[]) => {
           if (weeks.length === 0) return '';
           const startDate = new Date(weeks[0]);
@@ -211,7 +240,6 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
         const weekRangeText = formatWeekRange(planning.weeks);
         
         if (isCurrentWeekInPlanning) {
-          // CASO 1: Tarea que hay que hacer ESTA SEMANA
           planningStatus = 'current';
           planningColor = 'border-l-4 border-l-blue-500 bg-blue-50/50';
           planningBadge = (
@@ -221,7 +249,6 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
           );
           statusText = `Planificada para esta semana (${weekRangeText})`;
         } else {
-          // CASO 2: Tarea que VENDRÁ en un futuro planning
           planningStatus = 'future';
           planningColor = 'border-l-4 border-l-gray-300 bg-gray-50/30';
           planningBadge = (
@@ -237,7 +264,10 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
     // Determinar estilo de la tarjeta
     let cardStyle = 'border-l-8 ';
 
-    if (planningStatus === 'current') {
+    if (isInCurrentWeek) {
+      // ✅ DESTACAR TAREAS DE LA SEMANA SELECCIONADA
+      cardStyle += 'border-l-4 border-l-yellow-500 ring-2 ring-yellow-200 bg-yellow-50/30';
+    } else if (planningStatus === 'current') {
       cardStyle += planningColor;
     } else if (planningStatus === 'future') {
       cardStyle += planningColor;
@@ -252,7 +282,8 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
       statusText = 'Sin planificar';
     }
 
-    const iconType = planningStatus === 'current' ? '⏳' : 
+    const iconType = isInCurrentWeek ? '⭐' :
+                     planningStatus === 'current' ? '⏳' : 
                      planningStatus === 'future' ? '📅' :
                      hoursLogged > 0 ? '✨' :
                      task.status === 'completed' ? '✔️' : '📋';
@@ -284,13 +315,18 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
                    'Pendiente'}
                 </Badge>
                 
-                {/* Badge de planning (si aplica) */}
+                {/* Badge de planning */}
+                {isInCurrentWeek && (
+                  <Badge className="bg-yellow-500 text-white border-0 text-xs font-normal ml-1">
+                    ⭐ Esta semana
+                  </Badge>
+                )}
                 {planningBadge}
               </div>
 
               {/* Mensaje de estado claro */}
               <p className="text-xs font-medium mb-2 text-muted-foreground">
-                {statusText}
+                {isInCurrentWeek ? '¡Tarea prioritaria para esta semana!' : statusText}
               </p>
 
               {/* Contexto del proyecto/módulo */}
@@ -483,6 +519,11 @@ export function UserTaskInbox({ userId }: UserTaskInboxProps) {
       <Card>
         <CardHeader>
           <CardTitle>Mis Tareas por Proyecto</CardTitle>
+          {weeklyPlanning && (
+            <p className="text-sm text-muted-foreground mt-1">
+              📅 Planificación activa: <span className="font-medium text-blue-600">{weeklyPlanning.name}</span>
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {tasksByProject.map(project => {
